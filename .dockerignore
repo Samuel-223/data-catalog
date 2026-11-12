@@ -1,0 +1,6 @@
+apienv/
+__pycache__/
+*.pyc
+*.db
+.env
+.git/

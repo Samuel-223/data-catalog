@@ -1,0 +1,5 @@
+apienv/
+__pycache__/
+*.pyc
+app.db
+.env
