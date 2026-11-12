@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 app.db
 .env
+test_db.sqlite3
+.pytest_cache/
+.coverage
