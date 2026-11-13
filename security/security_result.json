@@ -1,0 +1,121 @@
+{
+  "base": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "id": "S01",
+      "category": "注入",
+      "case": "路径参数注入 id=1 OR 1=1",
+      "verdict": "PASS",
+      "note": "返回 422，未被拼接执行"
+    },
+    {
+      "id": "S02",
+      "category": "注入",
+      "case": "超范围整数 id 溢出",
+      "verdict": "PASS",
+      "note": "返回 422"
+    },
+    {
+      "id": "S03",
+      "category": "注入",
+      "case": "查询参数注入 skip=0' OR 1=1",
+      "verdict": "PASS",
+      "note": "返回 422"
+    },
+    {
+      "id": "S04",
+      "category": "注入",
+      "case": "字段写入 SQL 片段后校验表完整性",
+      "verdict": "PASS",
+      "note": "载荷按字面值存储，未被执行"
+    },
+    {
+      "id": "S05",
+      "category": "畸形输入",
+      "case": "非法 JSON",
+      "verdict": "PASS",
+      "note": "返回 422"
+    },
+    {
+      "id": "S06",
+      "category": "畸形输入",
+      "case": "字段类型错误",
+      "verdict": "PASS",
+      "note": "返回 422"
+    },
+    {
+      "id": "S07",
+      "category": "畸形输入",
+      "case": "空 body",
+      "verdict": "PASS",
+      "note": "返回 422"
+    },
+    {
+      "id": "S08",
+      "category": "畸形输入",
+      "case": "10 万字符超长字段",
+      "verdict": "PASS",
+      "note": "被长度校验拦截"
+    },
+    {
+      "id": "S09",
+      "category": "畸形输入",
+      "case": "多余未知字段",
+      "verdict": "PASS",
+      "note": "返回 400，多余字段被拒绝"
+    },
+    {
+      "id": "S10",
+      "category": "信息泄露",
+      "case": "404 响应体是否泄露实现细节",
+      "verdict": "PASS",
+      "note": "无敏感片段"
+    },
+    {
+      "id": "S11",
+      "category": "信息泄露",
+      "case": "422 响应体是否泄露实现细节",
+      "verdict": "PASS",
+      "note": "无敏感片段"
+    },
+    {
+      "id": "S12",
+      "category": "信息泄露",
+      "case": "未定义路由返回",
+      "verdict": "PASS",
+      "note": "返回 404"
+    },
+    {
+      "id": "S13",
+      "category": "信息泄露",
+      "case": "安全响应头",
+      "verdict": "INFO",
+      "note": "缺少：x-content-type-options, x-frame-options, strict-transport-security"
+    },
+    {
+      "id": "S14",
+      "category": "鉴权",
+      "case": "无凭证读取接口",
+      "verdict": "INFO",
+      "note": "返回 200，接口无认证即可读取"
+    },
+    {
+      "id": "S15",
+      "category": "鉴权",
+      "case": "无凭证写入接口",
+      "verdict": "INFO",
+      "note": "接口无认证即可写入"
+    },
+    {
+      "id": "S16",
+      "category": "鉴权",
+      "case": "TRACE 方法探测",
+      "verdict": "PASS",
+      "note": "返回 405"
+    }
+  ],
+  "counts": {
+    "PASS": 13,
+    "INFO": 3
+  }
+}
