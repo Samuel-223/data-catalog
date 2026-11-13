@@ -6,3 +6,6 @@ app.db
 test_db.sqlite3
 .pytest_cache/
 .coverage
+automation/report.html
+automation/report.xml
+automation/__pycache__/

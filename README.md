@@ -130,3 +130,39 @@ License
 
 MIT
 
+## 测试实践
+
+被测对象即本项目自身（FastAPI + PostgreSQL）。测试分三层，全部可本地复现。
+
+### 测试分层
+
+| 层级 | 位置 | 手段 | 用例数 |
+|---|---|---|---|
+| 单元 / 集成（进程内） | `tests/` | `TestClient` + `dependency_overrides` 隔离测试库 | 19 |
+| 接口自动化（HTTP 黑盒） | `automation/` | `requests` 直连运行中的服务 | 34 |
+| 冒烟 / 契约 | `automation/test_datasources.py` | 校验服务存活与 openapi 路径、操作数 | 2 |
+
+### 覆盖范围
+
+- **数据源**：创建、查询、更新、删除；缺字段返回 422；不存在 ID 返回 404
+- **表与字段**：建表、层变更、字段敏感标识、列表包含校验
+- **质量规则**：规则创建、执行、结果留存、删除；唯一性规则对重复值的判定
+- **血缘**：上游追溯、下游影响面、根字段空链路、缺字段 422
+
+### 如何运行
+
+```bash
+sudo docker compose up -d
+cd automation
+source ../apienv/bin/activate
+./run.sh        # 依赖装好时生成 report.html
+未安装 `pytest-html` 时会自动降级为 `junitxml` + 本地转换脚本，输出同样的 HTML 报告。
+
+### 测试数据管理
+
+所有测试数据由 `conftest.py` 的 fixture 生成，命名带随机后缀，用例结束自动删除，不污染业务库。
+
+### 已知未覆盖
+
+- 性能测试：尚未引入 JMeter，无并发与 P95 数据
+- 安全测试：仅依赖参数校验（422），未编写越权与未授权访问用例
