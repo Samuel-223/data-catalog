@@ -22,9 +22,12 @@ services:
       AUTO_CREATE_SCHEMA: "0"
       LOG_JSON: "1"
       LOG_LEVEL: INFO
+      AUTH_MODE: ${AUTH_MODE:-apikey}
       AUTH_ENABLED: ${AUTH_ENABLED:-0}
       API_KEYS: ${API_KEYS:-}
       AUDIT_LOG_PATH: /var/log/data-catalog/audit.jsonl
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-data-catalog-api}
     user: "10001:10001"
     read_only: true
     tmpfs:

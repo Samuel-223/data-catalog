@@ -1,0 +1,14 @@
+$ 服务以 AUTH_MODE=oidc 启动（HS256 仅本地演示，生产为 Keycloak RS256/JWKS）
+
+--- admin token GET /datasources
+200
+--- admin token POST /datasources
+201
+--- viewer token POST（应 403）
+当前角色 viewer 无权执行 POST，需要 editor
+--- 过期 token（应 401）
+token 已过期
+--- /auth/whoami
+{"actor":"dev@corp.com","role":"admin","mode":"oidc","scheme":"bearer"}
+--- 无 token
+401

@@ -55,7 +55,9 @@ def test_admin_can_delete(client, auth_on):
 
 def test_audit_records_write_operation(client, auth_on):
     client.post("/datasources", json=_ds("ds_audit"), headers=auth_on["editor"])
-    rows = client.get("/audit", params={"path_prefix": "/datasources"}, headers=auth_on["admin"]).json()
+    rows = client.get(
+        "/audit", params={"path_prefix": "/datasources"}, headers=auth_on["admin"]
+    ).json()
     assert rows, "写操作应留审计记录"
     row = rows[0]
     assert row["method"] == "POST"

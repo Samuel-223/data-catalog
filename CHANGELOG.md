@@ -1,5 +1,21 @@
 # 变更记录
 
+## 0.4.1 — 2026-11-16
+
+### 新增：OIDC 单点登录
+
+- `AUTH_MODE=off|apikey|oidc|both`，未显式设置时沿用 `AUTH_ENABLED`，升级不改变既有行为
+- JWT 验签：RS256/RS384/RS512 走 JWKS（5 分钟缓存，支持 `.well-known` 自动发现），HS256 仅在配置 `OIDC_DEV_HS256_SECRET` 时可用
+- 校验 iss / aud / exp / iat，错误分别给出可定位的 401 文案
+- 角色映射：`OIDC_ROLES_CLAIM`（支持 `realm_access.roles` 这类路径）+ `OIDC_ROLE_MAP`，多角色取最高权限
+- 新增 `GET /auth/whoami`：当前身份、角色、认证方式
+- 新增 `scripts/dev_token.py` 与 `make token ROLE=admin`，不连身份源也能本地自测
+- 文档 `docs/oidc.md`：Keycloak 的 kcadm 建 realm/client/角色/授权命令、Azure AD `roles` 映射、401/403 排障表
+
+### 测试
+
+- 新增 `tests/test_oidc.py` 9 项，全量 46 项通过
+
 ## 0.4.0 — 2026-11-16
 
 ### 新增：权限与审计

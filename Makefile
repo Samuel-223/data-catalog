@@ -1,4 +1,4 @@
-.PHONY: help install run test cov lint fmt sec keygen audit-report seed migrate up down logs
+.PHONY: help install run test cov lint fmt sec keygen token audit-report seed migrate up down logs
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -28,6 +28,9 @@ sec: ## Linux/容器安全基线检查（有 FAIL 则退出码 1）
 
 keygen: ## 生成 API Key：make keygen ROLE=admin
 	python -m app.core.security $(or $(ROLE),editor)
+
+token: ## 本地 OIDC 测试 token：make token ROLE=admin
+	python scripts/dev_token.py $(or $(ROLE),admin)
 
 audit-report: ## 审计报表（默认读 AUDIT_LOG_PATH 或 audit.jsonl）
 	./scripts/audit_report.sh -f $(or $(AUDIT_LOG),audit.jsonl)

@@ -11,7 +11,7 @@ from .core.logging import setup_logging
 from .core.middleware import RequestContextMiddleware
 from .core.security import authorize
 from .db import Base, engine
-from .routers import audit, datasources, health, lineage, rules, tables
+from .routers import audit, authinfo, datasources, health, lineage, rules, tables
 
 setup_logging(settings.log_level, settings.log_json)
 
@@ -64,6 +64,7 @@ app.include_router(rules.router, dependencies=[Depends(authorize)])
 app.include_router(lineage.router, dependencies=[Depends(authorize)])
 # 审计查询只给管理员，鉴权在路由内部完成
 app.include_router(audit.router)
+app.include_router(authinfo.router)
 
 
 @app.get("/docs", include_in_schema=False)
@@ -87,4 +88,5 @@ def root():
         "health": "/health",
         "ready": "/ready",
         "audit": "/audit",
+        "whoami": "/auth/whoami",
     }
