@@ -7,6 +7,7 @@ from ..schemas import LineageCreate
 
 router = APIRouter(prefix="/lineage", tags=["数据血缘"])
 
+
 def _node(col: ColumnMeta, depth: int):
     return {
         "column_id": col.id,
@@ -14,6 +15,7 @@ def _node(col: ColumnMeta, depth: int):
         "table_id": col.table_id,
         "depth": depth,
     }
+
 
 @router.post("", status_code=201)
 def link(payload: LineageCreate, db: Session = Depends(get_db)):
@@ -29,6 +31,7 @@ def link(payload: LineageCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(col)
     return {"column_id": col.id, "upstream_column_id": col.upstream_column_id}
+
 
 @router.get("/{column_id}/upstream")
 def upstream(
@@ -51,6 +54,7 @@ def upstream(
         chain.append(_node(nxt, depth))
         cur = nxt
     return {"column_id": column_id, "upstream": chain}
+
 
 @router.get("/{column_id}/downstream")
 def downstream(

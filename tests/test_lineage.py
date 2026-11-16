@@ -26,6 +26,7 @@ def test_link_and_trace_upstream(client, make_data):
     assert up[0]["column_id"] == col_up
     assert up[0]["column_name"] == "phone"
 
+
 def test_trace_downstream(client, make_data):
     ds_id, table_id, col_up = make_data(name="ods_src2", table="src_table2", column="phone")
 
@@ -45,10 +46,12 @@ def test_trace_downstream(client, make_data):
     assert len(down) == 1
     assert down[0]["column_id"] == col_down
 
+
 def test_lineage_self_reference_rejected(client, make_data):
     _, _, col_id = make_data()
     r = client.post("/lineage", json={"column_id": col_id, "upstream_column_id": col_id})
     assert r.status_code == 400
+
 
 def test_lineage_missing_column(client, make_data):
     _, _, col_id = make_data()

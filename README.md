@@ -1,225 +1,162 @@
-![接口文档](docs/swagger.png)
 # 数据资产目录与质量校验服务
 
 面向数据治理场景的后端服务：登记数据资产元数据、配置质量规则并执行校验、追溯字段级血缘关系。
 
-## 功能
+![python](https://img.shields.io/badge/python-3.12-blue)
+![fastapi](https://img.shields.io/badge/FastAPI-0.116-009688)
+![tests](https://img.shields.io/badge/tests-28%20passed-brightgreen)
+![coverage](https://img.shields.io/badge/coverage-87%25-yellowgreen)
+![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
-| 模块 | 能力 |
-|---|---|
-| 数据源管理 | 数据源增删改查，记录类型标识（MySQL / PostgreSQL / Hive 等）与归属人 |
-| 元数据管理 | 数据源 → 数据表 → 字段 三级登记，字段级敏感标识 |
-| 数据质量 | 非空 / 唯一 / 值域 三类规则配置，执行结果持久化 |
-| 数据血缘 | 字段级上下游登记，向上追溯与向下影响范围查询 |
+![接口文档](docs/swagger.png)
 
-## 技术栈
+## 能力矩阵
 
-- Python 3.12+（本地开发环境为 3.14，容器镜像使用 `python:3.12-slim`）
-- FastAPI / Uvicorn
-- SQLAlchemy 2.x（DeclarativeBase + Mapped 类型注解）
-- Pydantic v2 入参校验
-- SQLite（本地开发）/ PostgreSQL 16（容器部署）
-- Docker + Docker Compose
+| 模块 | 能力 | 关键实现 |
+|---|---|---|
+| 数据源管理 | 数据源增删改查，记录类型与归属人 | 唯一约束 + Pydantic 双层校验 |
+| 元数据管理 | 数据源 → 表 → 字段 三级登记，字段级敏感标识 | 声明式关系 + 级联删除 |
+| 数据质量 | 非空 / 唯一 / 值域 三类规则，执行结果留存 | 规则与数据解耦，值集可替换 |
+| 数据血缘 | 字段级上下游登记、向上溯源、向下推影响 | 单向存储 + BFS + 深度上限 |
+| 可观测性 | 健康/就绪探针、请求 ID、结构化日志、统一错误体 | 中间件 + contextvar + JSON 日志 |
+| 工程化 | 锁定依赖、Alembic 迁移、ruff 检查、CI、覆盖率 | Makefile 一条命令到位 |
 
 ## 快速开始
 
-### 本地运行
+### 方式一：Docker（含 PostgreSQL）
 
 ```bash
-python3 -m venv apienv
-source apienv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+docker compose up --build -d      # api:8000 + postgres:16
+curl -s http://127.0.0.1:8000/ready
+```
 
-容器运行
-docker compose up --build
+### 方式二：本地（SQLite，零依赖）
 
-交互文档：http://127.0.0.1:8000/docs
-
-接口一览
-方法	路径	说明
-POST	/datasources	创建数据源
-GET	/datasources	分页查询数据源
-GET	/datasources/{id}	查询单个数据源
-PUT	/datasources/{id}	更新数据源
-DELETE	/datasources/{id}	删除数据源
-POST	/tables	创建数据表
-GET	/tables	按数据源查询数据表
-POST	/tables/{id}/columns	创建字段
-GET	/tables/{id}/columns	查询字段列表
-POST	/rules	配置质量规则
-GET	/rules	查询规则
-DELETE	/rules/{id}	删除规则
-POST	/rules/{id}/run	执行校验
-GET	/rules/{id}/results	查询校验历史
-POST	/lineage	登记字段血缘
-GET	/lineage/{id}/upstream	向上追溯
-GET	/lineage/{id}/downstream	向下查影响范围
-
-三分钟演示
-# 1. 登记一个数据源
-curl -s -X POST http://127.0.0.1:8000/datasources \
-  -H "Content-Type: application/json" \
-  -d '{"name":"ods_mysql","type":"mysql","host":"127.0.0.1","owner":"demo"}'
-
-# 2. 配置非空规则并执行
-curl -s -X POST http://127.0.0.1:8000/rules \
-  -H "Content-Type: application/json" \
-  -d '{"table_id":1,"rule_type":"not_null"}'
-
-curl -s -X POST http://127.0.0.1:8000/rules/1/run \
-  -H "Content-Type: application/json" \
-  -d '{"values":["a", null, "c"]}'
-
-设计说明
-- **三级元数据模型**：数据源 → 数据表 → 字段，字段级 `is_sensitive` 为脱敏策略提供元数据依据
-- **规则与数据解耦**：校验以「值集 + 规则」为输入，数据获取层可替换，接入真实数据库时无需改动规则逻辑
-- **血缘单向存储**：仅保存上游引用，下游通过反查推导，避免双向存储不一致；BFS + 深度上限规避环形血缘
-- **级联删除**：`cascade="all, delete-orphan"` 保证删除数据源时不残留元数据
-- **双层校验**：数据库约束 + Pydantic 入参校验，约束冲突统一转为 400 响应
-
-测试
+```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-python -m pytest
+make seed        # 灌入演示数据：2 数据源 / 5 表 / 21 字段 / 3 规则
+make run         # http://127.0.0.1:8000/docs
+```
 
-19 个用例全部通过，覆盖：
+### 常用命令
 
-- 数据源 CRUD 全流程与 404 边界
-- 数据表、字段创建
-- 三类质量规则的创建与执行（含通过与不通过两种结果）
-- 校验结果历史留存
-- 血线上游追溯与下游影响范围查询
-- 自引用血缘、非法规则类型等异常入参校验
+```bash
+make test        # 28 项单测
+make cov         # 覆盖率报告
+make lint fmt    # 检查与格式化
+make migrate     # Alembic 升级到最新
+```
 
-测试通过 `dependency_overrides` 替换数据库依赖，使用独立 SQLite 文件，
-每个用例前重建表结构，不触碰开发库数据。
+## 三分钟验证
 
-目录结构
+```bash
+# 1) 建数据源
+curl -s -X POST http://127.0.0.1:8000/datasources \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"ods_mysql","type":"mysql","host":"10.0.0.12:3306","owner":"demo"}'
+
+# 2) 建表、建规则、执行校验
+curl -s -X POST http://127.0.0.1:8000/rules \
+  -H 'Content-Type: application/json' \
+  -d '{"table_id":1,"rule_type":"not_null"}'
+curl -s -X POST http://127.0.0.1:8000/rules/1/run \
+  -H 'Content-Type: application/json' \
+  -d '{"values":["a",null,"c"]}'
+# → {"passed":false,"abnormal_count":1,"detail":"总数 3，空值 1"}
+
+# 3) 看错误体形状（统一结构，带 request_id）
+curl -i http://127.0.0.1:8000/datasources/999999
+# → HTTP 404, {"error":{"code":"not_found","message":"…","request_id":"…"},"detail":"…"}
+```
+
+## 接口一览
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/health` `/ready` | 存活 / 就绪（含 DB 连通性） |
+| GET | `/` | 服务信息与入口 |
+| POST | `/datasources` | 创建数据源 |
+| GET | `/datasources` | 分页查询（skip/limit） |
+| GET/PUT/DELETE | `/datasources/{id}` | 查单个 / 更新 / 删除 |
+| POST | `/tables` | 创建数据表 |
+| GET | `/tables` | 按数据源查询 |
+| POST/GET | `/tables/{id}/columns` | 字段创建 / 列表 |
+| POST | `/rules` | 配置质量规则（not_null/unique/range） |
+| GET | `/rules` | 规则查询（按表 / 启用状态） |
+| DELETE | `/rules/{id}` | 删除规则 |
+| POST | `/rules/{id}/run` | 执行校验并落库 |
+| GET | `/rules/{id}/results` | 校验历史 |
+| POST | `/lineage` | 登记字段血缘 |
+| GET | `/lineage/{id}/upstream` | 向上溯源 |
+| GET | `/lineage/{id}/downstream` | 向下影响范围 |
+
+完整字段与示例见 [`docs/api.md`](docs/api.md)。
+
+## 工程结构
+
+```
 app/
-├── __init__.py
-├── db.py          引擎与会话
-├── models.py      ORM 模型
-├── schemas.py     Pydantic 模型
-├── main.py        应用入口
-└── routers/
-    ├── datasources.py
-    ├── tables.py
-    ├── rules.py
-    └── lineage.py
-tests/
-├── conftest.py
-├── test_datasources.py
-├── test_rules.py
-└── test_lineage.py
+├── core/            # 配置、日志、中间件、错误处理
+├── routers/         # datasources / tables / rules / lineage / health
+├── models.py        # 5 张表：datasource / table_meta / column_meta / quality_rule / quality_result
+├── schemas.py       # Pydantic v2 入出参
+├── db.py            # 引擎与会话（连接池可调）
+└── main.py          # 应用装配
+migrations/          # Alembic 迁移（0001_init）
+scripts/seed_demo.py # 演示数据
+tests/               # 28 项单元与集成测试
+automation/          # 34 项 HTTP 黑盒接口自动化
+security/            # 16 项安全检查
+perf/ compat/        # 压测与时序、客户端兼容
+```
 
-容器化部署
-`docker compose up --build` 启动两个服务：
-服务	说明
-api	FastAPI 应用，映射宿主 8000 端口
-db	PostgreSQL 16，数据持久化在 pgdata 数据卷
-启动顺序由 `depends_on` + `pg_isready` 健康检查保证。数据库地址通过 `DATABASE_URL` 注入，本地默认 SQLite，容器内切换为 PostgreSQL，代码无需修改。
-docker compose ps                                            # 状态
-docker compose logs -f api                                   # 日志
-docker compose exec db psql -U catalog -d catalog -c "\dt"    # 查看表
-docker compose down                                          # 停止
-docker compose down -v                                        # 停止并清除数据
+架构与设计取舍见 [`docs/architecture.md`](docs/architecture.md)，开发与调试见 [`docs/development.md`](docs/development.md)。
 
-注：compose 中的数据库口令为本地演示用弱口令，仅用于开发环境，不代表生产配置。
+## 质量保障
 
-License
+| 维度 | 规模 | 结果 |
+|---|---|---|
+| 单元 / 集成（`tests/`） | 28 项 | 全通过，覆盖率 87% |
+| 接口自动化（`automation/`） | 34 项 | 全通过 |
+| 安全检查（`security/`） | 16 项 | 13 通过 / 3 项已知缺口 / 0 可被利用 |
+| 数据一致性 | 2 项（含篡改反证） | 接口输出与库表逐字段一致 |
+| 性能 | 50/100/200 并发 | TPS 1194 / 1170 / 超限超时 |
+| CI | GitHub Actions | lint + test + coverage + docker build |
+
+明细与复现方式见 [`docs/testing.md`](docs/testing.md)。
+
+## 错误模型与可观测性
+
+```json
+{
+  "error": {"code": "not_found", "message": "数据源不存在", "request_id": "a1b2c3d4e5f6"},
+  "detail": "数据源不存在"
+}
+```
+
+- 所有失败统一形状，调用方只需解析一个结构；`detail` 字段保留以兼容旧调用方
+- 每次响应带 `X-Request-ID` 与 `X-Process-Time-ms`，透传客户端传入的 ID
+- 日志一行一个 JSON，含 `request_id` / `method` / `path` / `status` / `duration_ms`
+- `/health` 只看进程，`/ready` 才查数据库，容器编排可区分两类故障
+
+## 部署与迁移
+
+```bash
+alembic upgrade head                 # 生产：显式迁移
+AUTO_CREATE_SCHEMA=0 docker compose up -d   # 关闭自动建表，交给迁移
+alembic revision --autogenerate -m "add xxx"  # 新增变更
+```
+
+配置全部来自环境变量，样例见 [`.env.example`](.env.example)。
+
+## 已知边界
+
+1. 无鉴权：接口未做认证授权，仅适用于内网或演示环境（路线图第一项）
+2. 无速率限制与安全响应头
+3. 校验的数据来源目前是请求体传入的值集，尚未接入真实数据库连接器
+4. 单个应用实例，横向扩展需前置 PgBouncer 或读写分离
+
+## License
 
 MIT
-
-## 测试实践
-
-被测对象即本项目自身（FastAPI + PostgreSQL）。测试分三层，全部可本地复现。
-
-### 测试分层
-
-| 层级 | 位置 | 手段 | 用例数 |
-|---|---|---|---|
-| 单元 / 集成（进程内） | `tests/` | `TestClient` + `dependency_overrides` 隔离测试库 | 19 |
-| 接口自动化（HTTP 黑盒） | `automation/` | `requests` 直连运行中的服务 | 34 |
-| 冒烟 / 契约 | `automation/test_datasources.py` | 校验服务存活与 openapi 路径、操作数 | 2 |
-
-### 覆盖范围
-
-- **数据源**：创建、查询、更新、删除；缺字段返回 422；不存在 ID 返回 404
-- **表与字段**：建表、层变更、字段敏感标识、列表包含校验
-- **质量规则**：规则创建、执行、结果留存、删除；唯一性规则对重复值的判定
-- **血缘**：上游追溯、下游影响面、根字段空链路、缺字段 422
-
-### 如何运行
-
-```bash
-sudo docker compose up -d
-cd automation
-source ../apienv/bin/activate
-./run.sh        # 依赖装好时生成 report.html
-未安装 `pytest-html` 时会自动降级为 `junitxml` + 本地转换脚本，输出同样的 HTML 报告。
-
-### 测试数据管理
-
-所有测试数据由 `conftest.py` 的 fixture 生成，命名带随机后缀，用例结束自动删除，不污染业务库。
-
-### 已知未覆盖
-
-- 性能测试：尚未引入 JMeter，无并发与 P95 数据
-- 安全测试：仅依赖参数校验（422），未编写越权与未授权访问用例
-### 容量边界
-
-压测进行中打开浏览器访问 `/docs` 或 `/datasources`，会出现页面空白、一直加载或
-`ERR_EMPTY_RESPONSE`；压测一停止，页面立即恢复。这不是服务异常，而是连接池排队的直接表现。
-
-连接池配置为 `pool_size=20`、`max_overflow=40`、`pool_timeout=10`，即同时最多提供 60 条
-数据库连接。每个 HTTP 请求占用一条连接，因此理论并发上限约为 60：
-
-| 并发 | 与连接池上限关系 | TPS | P95 | 表现 |
-| --- | --- | --- | --- | --- |
-| 50 | 未超限 | 1194.31 | 55 ms | 零失败，稳定 |
-| 100 | 超限 40 | 1169.57 | 100 ms | 延迟抬升，仍可用 |
-| 200 | 超限 140 | — | — | 排队超过 `pool_timeout` 10 秒，请求超时 |
-
-超过上限的请求在池中排队，排队时长超过 `pool_timeout` 即报错。浏览器请求排在队尾，
-因此表现为页面无响应；压测结束队列清空后自动恢复。
-
-提升容量的方向：扩大连接池、引入连接复用、增加应用实例或前置连接池代理（如 PgBouncer）。
-### 安全测试
-
-`security/security_check.py` 覆盖四类共 16 项检查，标准库直连，零第三方依赖，
-输出 PASS / INFO / FAIL 三态结论，结果落盘 `security_result.json`。
-
-| 类别 | 项数 | 结果 | 说明 |
-| --- | --- | --- | --- |
-| 注入 | 4 | 全部通过 | 路径参数、查询参数与字段写入均未被拼接执行，参数化查询生效 |
-| 畸形输入 | 5 | 全部通过 | 非法 JSON、类型错误、空 body、超长字段、多余字段均被拦截 |
-| 信息泄露 | 4 | 3 通过 / 1 缺口 | 错误响应不含堆栈与 SQL 片段；缺安全响应头 |
-| 鉴权 | 3 | 3 项缺口 | 接口无凭证即可读写，属当前设计范围外的已知缺口 |
-
-**已修复缺陷**
-
-| 编号 | 现象 | 根因 | 修复 | 回归 |
-| --- | --- | --- | --- | --- |
-| S02 | `GET /datasources/9999999999999999999999` 返回 500 | Python int 无上限，值超出 PostgreSQL int4 范围，驱动抛 `DataError` 且无异常处理器 | 统一异常处理，数据库异常转 422，不回显驱动细节 | 溢出请求 500 → 422，正常请求保持 200 |
-
-**已知缺口**
-
-1. 无鉴权：接口未做认证与授权，仅适用于内网与本地演示环境
-2. 缺安全响应头：未设置 `X-Content-Type-Options`、`X-Frame-Options`
-3. 无速率限制：不具备防高频请求能力
-
-**结论**：13 项通过，3 项为设计缺口，0 项可被利用。
-### 数据一致性校验
-
-将接口返回与库表记录分别取出，按主键排序后逐字段比对，不一致时直接指出行号、字段名与两侧取值；
-另构造篡改场景，验证比对具备判别力（篡改后必须断言失败）。
-
-| 用例 | 验证内容 |
-| --- | --- |
-| `test_list_matches_db` | 三条数据源经接口写入后，接口输出与库表记录逐字段一致 |
-| `test_detects_deviation` | 直接篡改库表 `owner` 字段，比对必须报错并定位到该字段 |
-
-实现不依赖 pandas：本机虚拟化环境 CPU 不支持科学计算库所需的指令集，
-改用原生查询与排序比对，断言信息更精确。
-
-当前测试规模：单元与集成 21 项、接口自动化 34 项、安全检查 16 项。

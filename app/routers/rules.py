@@ -9,11 +9,13 @@ router = APIRouter(prefix="/rules", tags=["质量规则"])
 
 VALID_TYPES = {"not_null", "unique", "range"}
 
+
 def _to_float(v):
     try:
         return float(v)
     except (TypeError, ValueError):
         return None
+
 
 @router.post("", response_model=QualityRuleOut, status_code=201)
 def create_rule(payload: QualityRuleCreate, db: Session = Depends(get_db)):
@@ -28,6 +30,7 @@ def create_rule(payload: QualityRuleCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(obj)
     return obj
+
 
 @router.get("", response_model=list[QualityRuleOut])
 def list_rules(
@@ -44,6 +47,7 @@ def list_rules(
         q = q.filter(QualityRule.enabled == enabled)
     return q.offset(skip).limit(limit).all()
 
+
 @router.delete("/{rule_id}", status_code=204)
 def delete_rule(rule_id: int, db: Session = Depends(get_db)):
     obj = db.get(QualityRule, rule_id)
@@ -51,6 +55,7 @@ def delete_rule(rule_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, detail="规则不存在")
     db.delete(obj)
     db.commit()
+
 
 @router.post("/{rule_id}/run", response_model=QualityResultOut)
 def run_rule(
@@ -76,7 +81,9 @@ def run_rule(
         detail = f"总数 {len(values)}，重复 {abnormal}"
     elif rule.rule_type == "range":
         upper = rule.threshold if rule.threshold is not None else float("inf")
-        bad = [v for v in values if v is not None and (_to_float(v) is None or _to_float(v) > upper)]
+        bad = [
+            v for v in values if v is not None and (_to_float(v) is None or _to_float(v) > upper)
+        ]
         abnormal = len(bad)
         detail = f"总数 {len(values)}，超出上界 {upper} 的有 {abnormal}"
 
@@ -90,6 +97,7 @@ def run_rule(
     db.commit()
     db.refresh(result)
     return result
+
 
 @router.get("/{rule_id}/results", response_model=list[QualityResultOut])
 def list_results(

@@ -1,5 +1,6 @@
-import httpx
 import os
+
+import httpx
 
 
 def test_create_rule(table, rule_factory):

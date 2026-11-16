@@ -1,4 +1,5 @@
 """数据一致性校验：接口返回值与库表记录逐字段比对（零第三方依赖）。"""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -61,7 +62,7 @@ def _assert_same(api_rows, db_rows, keys=COMPARE_KEYS):
     assert len(api_rows) == len(db_rows), (
         f"记录数不一致：接口 {len(api_rows)} 行，库表 {len(db_rows)} 行"
     )
-    for index, (api_row, db_row) in enumerate(zip(api_rows, db_rows)):
+    for index, (api_row, db_row) in enumerate(zip(api_rows, db_rows, strict=False)):
         for position, key in enumerate(keys):
             api_value, db_value = api_row[position], db_row[position]
             if api_value != db_value:

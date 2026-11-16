@@ -8,6 +8,7 @@ def test_create_not_null_rule(client, make_data):
     assert r.status_code in (200, 201)
     assert r.json()["rule_type"] == "not_null"
 
+
 def test_run_not_null_rule_not_passed(client, make_data):
     _, table_id, col_id = make_data()
     r = client.post(
@@ -25,6 +26,7 @@ def test_run_not_null_rule_not_passed(client, make_data):
     assert body["passed"] is False
     assert body["abnormal_count"] == 2
 
+
 def test_run_not_null_rule_passed(client, make_data):
     _, table_id, col_id = make_data()
     r = client.post("/rules", json={"table_id": table_id, "rule_type": "not_null"})
@@ -35,6 +37,7 @@ def test_run_not_null_rule_passed(client, make_data):
     assert body["passed"] is True
     assert body["abnormal_count"] == 0
 
+
 def test_run_unique_rule(client, make_data):
     _, table_id, _ = make_data()
     r = client.post("/rules", json={"table_id": table_id, "rule_type": "unique"})
@@ -44,6 +47,7 @@ def test_run_unique_rule(client, make_data):
     body = r.json()
     assert body["passed"] is False
     assert body["abnormal_count"] == 2
+
 
 def test_run_range_rule(client, make_data):
     _, table_id, _ = make_data()
@@ -58,10 +62,12 @@ def test_run_range_rule(client, make_data):
     assert body["passed"] is False
     assert body["abnormal_count"] == 2
 
+
 def test_invalid_rule_type(client, make_data):
     _, table_id, _ = make_data()
     r = client.post("/rules", json={"table_id": table_id, "rule_type": "unknown"})
     assert r.status_code == 400
+
 
 def test_rule_results_history(client, make_data):
     _, table_id, _ = make_data()
@@ -75,6 +81,7 @@ def test_rule_results_history(client, make_data):
     assert r.status_code == 200
     assert len(r.json()) == 2
 
+
 def test_delete_rule(client, make_data):
     _, table_id, _ = make_data()
     r = client.post("/rules", json={"table_id": table_id, "rule_type": "not_null"})
@@ -82,6 +89,7 @@ def test_delete_rule(client, make_data):
 
     r = client.delete(f"/rules/{rule_id}")
     assert r.status_code in (200, 204)
+
 
 def test_run_missing_rule(client):
     r = client.post("/rules/9999/run", json={"values": ["a"]})

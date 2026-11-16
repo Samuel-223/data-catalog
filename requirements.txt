@@ -1,5 +1,7 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-pydantic
-psycopg[binary]
+# 运行时依赖（锁定版本，保证不同机器复现同一环境）
+fastapi==0.116.0
+uvicorn[standard]==0.40.0
+SQLAlchemy==2.1.8
+pydantic==2.11.7
+alembic==1.20.1
+psycopg[binary]>=3.2,<4

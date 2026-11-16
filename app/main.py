@@ -1,23 +1,61 @@
-from fastapi import FastAPI, Request
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.exc import IntegrityError
 
+from .core.config import settings
+from .core.errors import register_error_handlers
+from .core.logging import setup_logging
+from .core.middleware import RequestContextMiddleware
 from .db import Base, engine
-from .routers import datasources, lineage, rules, tables
+from .routers import datasources, health, lineage, rules, tables
 
-Base.metadata.create_all(bind=engine)
+setup_logging(settings.log_level, settings.log_json)
+
+DESCRIPTION = """
+数据治理场景的后端服务，三块能力：
+- **元数据登记**：数据源 → 表 → 字段三级模型，字段可标注敏感级别；
+- **质量校验**：非空 / 唯一 / 值域三类规则，执行结果留存可查；
+- **字段级血缘**：BFS 向上溯源、向下推导影响范围，设深度上限规避环依赖。
+
+错误响应统一为 `{"error": {"code", "message", "request_id"}}`，
+每次响应头都带 `X-Request-ID`，便于按请求排查日志。
+"""
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.auto_create_schema:
+        Base.metadata.create_all(bind=engine)
+    yield
+
 
 app = FastAPI(
-    title="数据资产目录服务",
-    version="0.2.0",
+    title=settings.app_name,
+    version=settings.version,
+    description=DESCRIPTION,
     docs_url=None,
     redoc_url=None,
+    lifespan=lifespan,
 )
+
+if settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-Request-ID"],
+    )
+
+app.add_middleware(RequestContextMiddleware)
+register_error_handlers(app)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+app.include_router(health.router)
 app.include_router(datasources.router)
 app.include_router(tables.router)
 app.include_router(rules.router)
@@ -35,14 +73,13 @@ async def custom_swagger_ui():
     )
 
 
-@app.exception_handler(IntegrityError)
-async def integrity_handler(request: Request, exc: IntegrityError):
-    return JSONResponse(
-        status_code=400,
-        content={"detail": "数据约束冲突，请检查字段是否为空或重复"},
-    )
-
-
-@app.get("/")
+@app.get("/", tags=["运维"], summary="服务信息")
 def root():
-    return {"status": "ok", "service": "data-catalog", "version": "0.2.0"}
+    return {
+        "status": "ok",
+        "service": "data-catalog",
+        "version": settings.version,
+        "docs": "/docs",
+        "health": "/health",
+        "ready": "/ready",
+    }

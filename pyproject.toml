@@ -1,0 +1,29 @@
+[project]
+name = "data-catalog"
+version = "0.3.0"
+description = "数据资产目录与质量校验服务：元数据登记、质量规则执行、字段级血缘追溯"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["app/static", "apienv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+# FastAPI 依赖注入就是写在默认值里，B008 在此不适用
+"app/routers/*" = ["B008"]
+"app/main.py" = ["B008"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/static/*", "tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]

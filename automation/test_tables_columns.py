@@ -1,14 +1,19 @@
 import pytest
-
 from conftest import unique
 
 
 def test_create_table(api, datasource):
     name = unique("tbl")
-    r = api.post("/tables", {
-        "table_name": name, "layer": "DWD", "description": "建表校验",
-        "owner": "auto", "datasource_id": datasource["id"],
-    })
+    r = api.post(
+        "/tables",
+        {
+            "table_name": name,
+            "layer": "DWD",
+            "description": "建表校验",
+            "owner": "auto",
+            "datasource_id": datasource["id"],
+        },
+    )
     assert r.status_code in (200, 201), r.text
 
     body = r.json()
@@ -19,10 +24,13 @@ def test_create_table(api, datasource):
     api.delete(f"/tables/{body['id']}")
 
 
-@pytest.mark.parametrize("payload,desc", [
-    ({"layer": "ODS", "datasource_id": 1}, "缺少 table_name"),
-    ({"table_name": "x"}, "缺少 datasource_id"),
-])
+@pytest.mark.parametrize(
+    "payload,desc",
+    [
+        ({"layer": "ODS", "datasource_id": 1}, "缺少 table_name"),
+        ({"table_name": "x"}, "缺少 datasource_id"),
+    ],
+)
 def test_create_table_missing_field(api, payload, desc):
     r = api.post("/tables", payload)
     assert r.status_code == 422, f"{desc} 应返回 422，实际 {r.status_code}"
@@ -39,20 +47,30 @@ def test_get_table_not_found(api):
 
 
 def test_update_table_layer(api, table):
-    r = api.put(f"/tables/{table['id']}", {
-        "table_name": table["table_name"], "layer": "DWS",
-        "description": "层变更", "owner": "auto",
-    })
+    r = api.put(
+        f"/tables/{table['id']}",
+        {
+            "table_name": table["table_name"],
+            "layer": "DWS",
+            "description": "层变更",
+            "owner": "auto",
+        },
+    )
     assert r.status_code == 200, r.text
     assert r.json()["layer"] == "DWS"
 
 
 def test_create_column(api, table):
     name = unique("col")
-    r = api.post(f"/tables/{table['id']}/columns", {
-        "column_name": name, "data_type": "varchar",
-        "is_sensitive": True, "description": "字段校验",
-    })
+    r = api.post(
+        f"/tables/{table['id']}/columns",
+        {
+            "column_name": name,
+            "data_type": "varchar",
+            "is_sensitive": True,
+            "description": "字段校验",
+        },
+    )
     assert r.status_code in (200, 201), r.text
 
     body = r.json()

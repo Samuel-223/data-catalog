@@ -5,12 +5,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+RUN pip install --no-cache-dir --upgrade pip \
+    && useradd --create-home --uid 10001 appuser
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+COPY migrations ./migrations
+COPY alembic.ini .
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh && chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ready',timeout=2).status==200 else 1)"
+
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -20,10 +20,12 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
+
 @pytest.fixture(scope="session", autouse=True)
 def _cleanup_db_file():
     yield
     pathlib.Path(TEST_DB).unlink(missing_ok=True)
+
 
 @pytest.fixture
 def client():
@@ -42,6 +44,7 @@ def client():
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
 
 @pytest.fixture
 def make_data(client):

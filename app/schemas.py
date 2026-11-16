@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -70,6 +71,7 @@ class ColumnMetaOut(ColumnMetaBase):
     table_id: int
     model_config = ConfigDict(from_attributes=True)
 
+
 class QualityRuleBase(BaseModel):
     table_id: int
     column_id: int | None = None
@@ -77,12 +79,15 @@ class QualityRuleBase(BaseModel):
     threshold: float | None = None
     enabled: bool = True
 
+
 class QualityRuleCreate(QualityRuleBase):
     pass
+
 
 class QualityRuleOut(QualityRuleBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
 
 class QualityResultOut(BaseModel):
     id: int
@@ -93,8 +98,11 @@ class QualityResultOut(BaseModel):
     detail: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class RunPayload(BaseModel):
-    values: list[str | None] | None = None
+    # 值集允许字符串与数值混用，执行侧统一按字符串/浮点处理
+    values: list[str | int | float | None] | None = None
+
 
 class LineageCreate(BaseModel):
     column_id: int

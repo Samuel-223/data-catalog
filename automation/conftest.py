@@ -1,8 +1,8 @@
 import os
 import uuid
 
-import pytest
 import httpx
+import pytest
 
 BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 TIMEOUT = float(os.getenv("API_TIMEOUT", "10"))

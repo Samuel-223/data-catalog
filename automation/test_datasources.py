@@ -1,5 +1,4 @@
 import pytest
-
 from conftest import unique
 
 
@@ -18,10 +17,16 @@ def test_service_alive(api):
 
 def test_create_datasource(api):
     name = unique("ds")
-    r = api.post("/datasources", {
-        "name": name, "type": "mysql", "host": "10.0.0.1",
-        "owner": "auto", "description": "创建校验",
-    })
+    r = api.post(
+        "/datasources",
+        {
+            "name": name,
+            "type": "mysql",
+            "host": "10.0.0.1",
+            "owner": "auto",
+            "description": "创建校验",
+        },
+    )
     assert r.status_code in (200, 201), r.text
 
     body = r.json()
@@ -33,11 +38,14 @@ def test_create_datasource(api):
     api.delete(f"/datasources/{body['id']}")
 
 
-@pytest.mark.parametrize("payload,desc", [
-    ({"name": "only_name"}, "缺少 type"),
-    ({"type": "mysql"}, "缺少 name"),
-    ({}, "全部缺失"),
-])
+@pytest.mark.parametrize(
+    "payload,desc",
+    [
+        ({"name": "only_name"}, "缺少 type"),
+        ({"type": "mysql"}, "缺少 name"),
+        ({}, "全部缺失"),
+    ],
+)
 def test_create_datasource_missing_field(api, payload, desc):
     r = api.post("/datasources", payload)
     assert r.status_code == 422, f"{desc} 应返回 422，实际 {r.status_code}"
@@ -59,10 +67,16 @@ def test_get_datasource_not_found(api):
 
 def test_update_datasource(api, datasource):
     new_owner = unique("owner")
-    r = api.put(f"/datasources/{datasource['id']}", {
-        "name": datasource["name"], "type": "postgresql",
-        "host": "10.0.0.2", "owner": new_owner, "description": "更新校验",
-    })
+    r = api.put(
+        f"/datasources/{datasource['id']}",
+        {
+            "name": datasource["name"],
+            "type": "postgresql",
+            "host": "10.0.0.2",
+            "owner": new_owner,
+            "description": "更新校验",
+        },
+    )
     assert r.status_code == 200, r.text
     assert r.json()["owner"] == new_owner
 

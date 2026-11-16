@@ -4,8 +4,11 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import ColumnMeta, DataSource, TableMeta
 from ..schemas import (
-    ColumnMetaCreate, ColumnMetaOut,
-    TableMetaCreate, TableMetaOut, TableMetaUpdate,
+    ColumnMetaCreate,
+    ColumnMetaOut,
+    TableMetaCreate,
+    TableMetaOut,
+    TableMetaUpdate,
 )
 
 router = APIRouter(prefix="/tables", tags=["数据表与字段"])

@@ -1,6 +1,8 @@
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, Float
+
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .db import Base
 
 
@@ -68,7 +70,7 @@ class QualityRule(Base):
     column_id: Mapped[int | None] = mapped_column(
         ForeignKey("column_meta.id", ondelete="CASCADE"), nullable=True
     )
-    rule_type: Mapped[str] = mapped_column(String(50))   # not_null / unique / range
+    rule_type: Mapped[str] = mapped_column(String(50))  # not_null / unique / range
     threshold: Mapped[float | None] = mapped_column(Float)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
