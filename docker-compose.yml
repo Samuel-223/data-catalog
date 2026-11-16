@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: catalog
-      POSTGRES_PASSWORD: catalog123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置强口令}
       POSTGRES_DB: catalog
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -17,11 +17,19 @@ services:
   api:
     build: .
     environment:
-      DATABASE_URL: postgresql+psycopg://catalog:catalog123@db:5432/catalog
+      DATABASE_URL: postgresql+psycopg://catalog:${POSTGRES_PASSWORD:?请在 .env 中设置强口令}@db:5432/catalog
       # 生产由 Alembic 迁移建表，关闭启动自动 create_all
       AUTO_CREATE_SCHEMA: "0"
       LOG_JSON: "1"
       LOG_LEVEL: INFO
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "8000:8000"
     depends_on:

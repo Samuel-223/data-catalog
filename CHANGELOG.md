@@ -1,5 +1,23 @@
 # 变更记录
 
+## 0.3.1 — 2026-11-16
+
+### 新增
+
+- `security/linux_security_check.py`：20 项 Linux / 容器安全基线，仅标准库，支持 `--base-url` 附加 HTTP 侧检查与 `--json` 留证，有 FAIL 时退出码 1
+- `docs/linux-security.md`：检查项、实测结论、加固清单、与接口安全测试的分工
+- `make sec` 与 CI `linux-security` job：本地与流水线同一套基线
+
+### 加固
+
+- 应用统一注入 `X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`CSP`，L11 由 FAIL 转 PASS
+- compose 增加 `user: 10001:10001`、`read_only`、`tmpfs /tmp`、`cap_drop: ALL`、`no-new-privileges`
+- 数据库口令改为 `${POSTGRES_PASSWORD}` 注入，compose 不再含字面弱口令
+
+### 测试
+
+- 新增 1 项安全响应头断言，全量 29 项通过
+
 ## 0.3.0 — 2026-11-16
 
 ### 新增

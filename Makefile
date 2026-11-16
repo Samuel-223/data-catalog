@@ -1,4 +1,4 @@
-.PHONY: help install run test cov lint fmt seed migrate up down logs
+.PHONY: help install run test cov lint fmt sec seed migrate up down logs
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -22,6 +22,9 @@ lint: ## 代码检查
 fmt: ## 自动格式化
 	python -m ruff format .
 	python -m ruff check --fix .
+
+sec: ## Linux/容器安全基线检查（有 FAIL 则退出码 1）
+	python security/linux_security_check.py --json security/linux_result.json
 
 seed: ## 灌入演示数据（2 数据源 / 5 表 / 18 字段 / 3 规则）
 	python scripts/seed_demo.py

@@ -48,3 +48,10 @@ def test_validation_envelope(client):
     assert body["error"]["code"] == "validation_error"
     fields = {d["field"] for d in body["error"]["details"]}
     assert "name" in fields
+
+
+def test_security_headers(client):
+    r = client.get("/health")
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+    assert r.headers["X-Frame-Options"] == "DENY"
+    assert "Content-Security-Policy" in r.headers

@@ -46,6 +46,23 @@ jobs:
           path: coverage.xml
           if-no-files-found: warn
 
+  linux-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Linux / container baseline
+        run: python security/linux_security_check.py --json linux_result.json
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-security-result
+          path: linux_result.json
+          if-no-files-found: warn
+
   docker:
     runs-on: ubuntu-latest
     steps:

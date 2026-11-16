@@ -13,6 +13,17 @@ logger = logging.getLogger("app.access")
 
 SKIP_PATHS = {"/health", "/ready", "/metrics"}
 
+# 本地 Swagger UI 需要内联样式，故放开 style-src，脚本仍限制同源
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": (
+        "default-src 'self'; img-src 'self' data:; "
+        "style-src 'self' 'unsafe-inline'; script-src 'self'"
+    ),
+}
+
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -41,6 +52,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         duration_ms = round((time.perf_counter() - started) * 1000, 1)
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Process-Time-ms"] = str(duration_ms)
+        for key, value in SECURITY_HEADERS.items():
+            response.headers.setdefault(key, value)
 
         if request.url.path not in SKIP_PATHS:
             log = logger.info if response.status_code < 500 else logger.warning

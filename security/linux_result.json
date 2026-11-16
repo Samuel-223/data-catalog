@@ -1,0 +1,153 @@
+{
+  "generated_at": "2026-11-16T15:33:37",
+  "root": "/home/user/Doubao/chats/38451522239059714/data-catalog",
+  "base_url": "http://127.0.0.1:8016",
+  "counts": {
+    "PASS": 17,
+    "FAIL": 0,
+    "INFO": 1,
+    "SKIP": 2
+  },
+  "results": [
+    {
+      "id": "L01",
+      "name": "运行身份非 root",
+      "status": "PASS",
+      "detail": "euid=1234，非 root",
+      "hint": ""
+    },
+    {
+      "id": "L02",
+      "name": "镜像声明非 root 用户",
+      "status": "PASS",
+      "detail": "USER appuser",
+      "hint": ""
+    },
+    {
+      "id": "L03",
+      "name": "基础镜像版本固定",
+      "status": "PASS",
+      "detail": "python:3.12-slim",
+      "hint": ""
+    },
+    {
+      "id": "L04",
+      "name": "密钥与数据文件权限",
+      "status": "PASS",
+      "detail": "敏感文件不存在或权限已收紧",
+      "hint": ""
+    },
+    {
+      "id": "L05",
+      "name": "项目内无全局可写文件",
+      "status": "PASS",
+      "detail": "未发现 other 可写文件",
+      "hint": ""
+    },
+    {
+      "id": "L06",
+      "name": "项目内无 SUID 文件",
+      "status": "PASS",
+      "detail": "未发现 SUID 文件",
+      "hint": ""
+    },
+    {
+      "id": "L07",
+      "name": "compose 运行时加固",
+      "status": "PASS",
+      "detail": "cap_drop / no-new-privileges / read_only / user 均已声明",
+      "hint": ""
+    },
+    {
+      "id": "L09",
+      "name": "有效能力集最小化",
+      "status": "PASS",
+      "detail": "未持有高风险能力",
+      "hint": ""
+    },
+    {
+      "id": "L08b",
+      "name": "根文件系统只读",
+      "status": "SKIP",
+      "detail": "非容器环境，跳过",
+      "hint": ""
+    },
+    {
+      "id": "L10",
+      "name": "本项目暴露端口",
+      "status": "PASS",
+      "detail": "仅映射 [8000]",
+      "hint": ""
+    },
+    {
+      "id": "L11",
+      "name": "HTTP 安全响应头",
+      "status": "PASS",
+      "detail": "三类头齐全",
+      "hint": ""
+    },
+    {
+      "id": "L12",
+      "name": "点文件与源码不可下载",
+      "status": "PASS",
+      "detail": "四类路径均 404",
+      "hint": ""
+    },
+    {
+      "id": "L13",
+      "name": "依赖版本锁定",
+      "status": "PASS",
+      "detail": "全部锁定或带上下界约束",
+      "hint": ""
+    },
+    {
+      "id": "L14",
+      "name": "密钥与数据未入库",
+      "status": "PASS",
+      "detail": "未跟踪 .env / 私钥 / 数据库文件",
+      "hint": ""
+    },
+    {
+      "id": "L15",
+      "name": "口令不硬编码",
+      "status": "PASS",
+      "detail": "从环境变量注入：${POSTGRES_PASSWORD:?请在",
+      "hint": ""
+    },
+    {
+      "id": "L16",
+      "name": "日志不落明文口令",
+      "status": "PASS",
+      "detail": "未在日志中发现明文凭据",
+      "hint": ""
+    },
+    {
+      "id": "L17",
+      "name": "文件描述符上限",
+      "status": "PASS",
+      "detail": "soft limit 2048",
+      "hint": ""
+    },
+    {
+      "id": "L18",
+      "name": "内核网络参数",
+      "status": "PASS",
+      "detail": "syncookies 开启，未开启转发",
+      "hint": ""
+    },
+    {
+      "id": "L19",
+      "name": "SSH 基线",
+      "status": "SKIP",
+      "detail": "未安装 sshd（容器常态）",
+      "hint": ""
+    },
+    {
+      "id": "L20",
+      "name": "时间同步",
+      "status": "INFO",
+      "detail": "无 timedatectl（非 systemd 环境），需在宿主机自行校验",
+      "hint": ""
+    }
+  ]
+}

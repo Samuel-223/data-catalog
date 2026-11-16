@@ -122,9 +122,14 @@ perf/ compat/        # 压测与时序、客户端兼容
 | 安全检查（`security/`） | 16 项 | 13 通过 / 3 项已知缺口 / 0 可被利用 |
 | 数据一致性 | 2 项（含篡改反证） | 接口输出与库表逐字段一致 |
 | 性能 | 50/100/200 并发 | TPS 1194 / 1170 / 超限超时 |
+| Linux/容器基线 | 20 项（`security/linux_security_check.py`） | 17 PASS / 0 FAIL / 1 INFO / 2 SKIP |
 | CI | GitHub Actions | lint + test + coverage + docker build |
 
-明细与复现方式见 [`docs/testing.md`](docs/testing.md)。
+明细与复现方式见 [`docs/testing.md`](docs/testing.md)；主机与容器侧见 [`docs/linux-security.md`](docs/linux-security.md)。
+
+```bash
+make sec   # Linux/容器安全基线，20 项，有 FAIL 则退出码 1
+```
 
 ## 错误模型与可观测性
 
