@@ -19,6 +19,7 @@
 | 数据质量 | 非空 / 唯一 / 值域 三类规则，执行结果留存 | 规则与数据解耦，值集可替换 |
 | 数据血缘 | 字段级上下游登记、向上溯源、向下推影响 | 单向存储 + BFS + 深度上限 |
 | 可观测性 | 健康/就绪探针、请求 ID、结构化日志、统一错误体 | 中间件 + contextvar + JSON 日志 |
+| 权限与审计 | API Key + viewer/editor/admin 三级角色，写操作双落库（表 + JSONL） | 方法推导授权 + 审计钩子 |
 | 工程化 | 锁定依赖、Alembic 迁移、ruff 检查、CI、覆盖率 | Makefile 一条命令到位 |
 
 ## 快速开始
@@ -75,6 +76,7 @@ curl -i http://127.0.0.1:8000/datasources/999999
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/health` `/ready` | 存活 / 就绪（含 DB 连通性） |
+| GET | `/audit` | 审计查询（仅 admin，按人/方法/路径过滤） |
 | GET | `/` | 服务信息与入口 |
 | POST | `/datasources` | 创建数据源 |
 | GET | `/datasources` | 分页查询（skip/limit） |
@@ -117,12 +119,13 @@ perf/ compat/        # 压测与时序、客户端兼容
 
 | 维度 | 规模 | 结果 |
 |---|---|---|
-| 单元 / 集成（`tests/`） | 28 项 | 全通过，覆盖率 87% |
+| 单元 / 集成（`tests/`） | 37 项 | 全通过，覆盖率 88% |
 | 接口自动化（`automation/`） | 34 项 | 全通过 |
 | 安全检查（`security/`） | 16 项 | 13 通过 / 3 项已知缺口 / 0 可被利用 |
 | 数据一致性 | 2 项（含篡改反证） | 接口输出与库表逐字段一致 |
 | 性能 | 50/100/200 并发 | TPS 1194 / 1170 / 超限超时 |
 | Linux/容器基线 | 20 项（`security/linux_security_check.py`） | 17 PASS / 0 FAIL / 1 INFO / 2 SKIP |
+| 权限与审计 | 8 项（`tests/test_authz.py`） | 401/403/角色矩阵/审计落库/审计查询权限全通过 |
 | CI | GitHub Actions | lint + test + coverage + docker build |
 
 明细与复现方式见 [`docs/testing.md`](docs/testing.md)；主机与容器侧见 [`docs/linux-security.md`](docs/linux-security.md)。
@@ -130,6 +133,28 @@ perf/ compat/        # 压测与时序、客户端兼容
 ```bash
 make sec   # Linux/容器安全基线，20 项，有 FAIL 则退出码 1
 ```
+
+## 权限与审计
+
+```bash
+export AUTH_ENABLED=1
+export API_KEYS="admin:$(python -m app.core.security admin),editor:$(python -m app.core.security editor)"
+```
+
+| 角色 | 读 | 写 | 删 | 查审计 |
+|---|---|---|---|---|
+| viewer | ✅ | ❌ | ❌ | ❌ |
+| editor | ✅ | ✅ | ❌ | ❌ |
+| admin | ✅ | ✅ | ✅ | ✅ |
+
+写操作与 401/403 同时落 `audit_log` 表与 `${AUDIT_LOG_PATH}` 的 JSONL，
+审计带 `request_id`，密钥只记前 6 位指纹。
+
+```bash
+make audit-report          # 纯 shell 报表：按人、按状态码、越权尝试、最近记录
+```
+
+运维件在 `deploy/`：logrotate、auditd 规则、systemd 单元。设计说明见 [`docs/audit-and-rbac.md`](docs/audit-and-rbac.md)。
 
 ## 错误模型与可观测性
 

@@ -1,0 +1,35 @@
+==================== 审计概览 ====================
+文件：audit_demo.jsonl
+大小：4.0K    行数：5
+时间范围：2026-11-16T15:40:39 → 2026-11-16T15:40:39
+
+----------- 按操作人统计 -------------------------------
+  editor:sk_edi…21                  2 次
+  viewer:sk_vie…22                  1 次
+  unknown                           1 次
+  admin:sk_adm…21                   1 次
+
+----------- 按状态码统计 -------------------------------
+  HTTP 403     2 次
+  HTTP 401     1 次
+  HTTP 204     1 次
+  HTTP 201     1 次
+
+----------- 被拒最多的路径（401/403） ------------------
+  /datasources                          2 次
+  /datasources/1                        1 次
+
+----------- 写操作热度（路径维度） ---------------------
+  /datasources/1                        2 次
+  /datasources                          2 次
+
+----------- 最近 6 条原始记录 ---------------------
+{"ts": "2026-11-16T15:40:39", "request_id": "-", "actor": "unknown", "role": "none", "method": "GET", "path": "/datasources", "status": 401, "duration_ms": 0.5, "client_ip": "127.0.0.1"}
+{"ts": "2026-11-16T15:40:39", "request_id": "-", "actor": "viewer:sk_vie…22", "role": "viewer", "method": "POST", "path": "/datasources", "status": 403, "duration_ms": 0.7, "client_ip": "127.0.0.1"}
+{"ts": "2026-11-16T15:40:39", "request_id": "-", "actor": "editor:sk_edi…21", "role": "editor", "method": "POST", "path": "/datasources", "status": 201, "duration_ms": 35.4, "client_ip": "127.0.0.1"}
+{"ts": "2026-11-16T15:40:39", "request_id": "-", "actor": "editor:sk_edi…21", "role": "editor", "method": "DELETE", "path": "/datasources/1", "status": 403, "duration_ms": 0.5, "client_ip": "127.0.0.1"}
+{"ts": "2026-11-16T15:40:39", "request_id": "-", "actor": "admin:sk_adm…21", "role": "admin", "method": "DELETE", "path": "/datasources/1", "status": 204, "duration_ms": 29.5, "client_ip": "127.0.0.1"}
+
+============== 可疑信号（需人工复核） =================
+  · 403 共 2 次：存在越权尝试，核对 actor 是否为内部账号
+  · 未认证调用 1 次（actor=unknown），核对来源 IP 与密钥下发

@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.staticfiles import StaticFiles
@@ -9,8 +9,9 @@ from .core.config import settings
 from .core.errors import register_error_handlers
 from .core.logging import setup_logging
 from .core.middleware import RequestContextMiddleware
+from .core.security import authorize
 from .db import Base, engine
-from .routers import datasources, health, lineage, rules, tables
+from .routers import audit, datasources, health, lineage, rules, tables
 
 setup_logging(settings.log_level, settings.log_json)
 
@@ -56,10 +57,13 @@ register_error_handlers(app)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(health.router)
-app.include_router(datasources.router)
-app.include_router(tables.router)
-app.include_router(rules.router)
-app.include_router(lineage.router)
+# 业务路由统一挂鉴权依赖：GET→viewer，写→editor，删→admin
+app.include_router(datasources.router, dependencies=[Depends(authorize)])
+app.include_router(tables.router, dependencies=[Depends(authorize)])
+app.include_router(rules.router, dependencies=[Depends(authorize)])
+app.include_router(lineage.router, dependencies=[Depends(authorize)])
+# 审计查询只给管理员，鉴权在路由内部完成
+app.include_router(audit.router)
 
 
 @app.get("/docs", include_in_schema=False)
@@ -82,4 +86,5 @@ def root():
         "docs": "/docs",
         "health": "/health",
         "ready": "/ready",
+        "audit": "/audit",
     }

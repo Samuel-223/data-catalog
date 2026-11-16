@@ -1,5 +1,28 @@
 # 变更记录
 
+## 0.4.0 — 2026-11-16
+
+### 新增：权限与审计
+
+- API Key 认证 + viewer/editor/admin 三级角色，授权规则按 HTTP 方法推导（GET→viewer、写→editor、删→admin）
+- `GET /audit`：审计查询，仅 admin，支持按 actor / method / path 前缀 / 状态码过滤
+- 审计双落盘：`audit_log` 表（结构化查询）+ JSONL 文件（Linux 工具链处理），密钥只记 6 位指纹
+- 写操作全记，读操作只记 401/403；审计写失败不影响主流程
+- `python -m app.core.security <role>` 生成随机密钥；`make keygen ROLE=admin`
+- 迁移 `0002_audit_log`
+
+### 新增：Linux 运维件
+
+- `deploy/logrotate-data-catalog`：按天轮转、压缩、留 30 份、切后复核 640 appuser:adm
+- `deploy/auditd.rules`：监控代码、配置、审计目录与文件、root 提权执行
+- `deploy/data-catalog.service`：systemd 单元，含 NoNewPrivileges / ProtectSystem=strict / ReadWritePaths
+- `scripts/audit_report.sh`：纯 grep/awk 报表，服务挂掉或被入侵时仍可用
+
+### 测试
+
+- 新增 `tests/test_authz.py` 8 项：401 缺密钥、401 非法密钥、viewer/editor/admin 权限边界、审计落库、审计查询权限、失败鉴权留痕
+- 全量 37 项通过，覆盖率 88%
+
 ## 0.3.1 — 2026-11-16
 
 ### 新增

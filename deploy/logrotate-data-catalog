@@ -1,0 +1,19 @@
+# 审计日志轮转：/etc/logrotate.d/data-catalog
+# 安装：sudo cp deploy/logrotate-data-catalog /etc/logrotate.d/data-catalog
+# 演练：sudo logrotate -d /etc/logrotate.d/data-catalog   # -d 只打印不执行
+# 强制切一次：sudo logrotate -f /etc/logrotate.d/data-catalog
+
+/var/log/data-catalog/*.jsonl {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 appuser adm
+    sharedscripts
+    # 切完给服务发 HUP 没意义（审计是 append 模式），这里只做权限复核
+    postrotate
+        chmod 0640 /var/log/data-catalog/*.jsonl 2>/dev/null || true
+    endscript
+}

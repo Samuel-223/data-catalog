@@ -86,3 +86,20 @@ class QualityResult(Base):
     passed: Mapped[bool] = mapped_column(Boolean)
     abnormal_count: Mapped[int] = mapped_column(default=0)
     detail: Mapped[str | None] = mapped_column(Text)
+
+
+class AuditLog(Base):
+    """写操作审计：谁、什么时候、对哪个路径、结果如何。"""
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ts: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
+    request_id: Mapped[str] = mapped_column(String(32), index=True)
+    actor: Mapped[str] = mapped_column(String(80), index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    method: Mapped[str] = mapped_column(String(8))
+    path: Mapped[str] = mapped_column(String(200), index=True)
+    status_code: Mapped[int] = mapped_column(index=True)
+    duration_ms: Mapped[float] = mapped_column(default=0.0)
+    client_ip: Mapped[str | None] = mapped_column(String(64))

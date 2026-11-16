@@ -20,3 +20,7 @@ automation/__pycache__/
 # 本地调试残留
 dbg*.db
 smoke.db
+
+# 审计日志（本地运行产物）
+audit*.jsonl
+audit_demo.jsonl

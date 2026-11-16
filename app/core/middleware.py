@@ -68,4 +68,28 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                     }
                 },
             )
+            _write_audit(request, response.status_code, duration_ms)
         return response
+
+
+def _write_audit(request: Request, status_code: int, duration_ms: float) -> None:
+    """审计不允许拖垮主流程：任何异常都吞掉并记日志。"""
+    try:
+        from .audit import record, should_record
+
+        if not should_record(request.method, status_code):
+            return
+        from ..db import SessionLocal
+
+        record(
+            actor=getattr(request.state, "actor", "-"),
+            role=getattr(request.state, "role", "-"),
+            method=request.method,
+            path=request.url.path,
+            status_code=status_code,
+            duration_ms=duration_ms,
+            client_ip=request.client.host if request.client else "-",
+            db_factory=SessionLocal,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("audit_hook_failed")

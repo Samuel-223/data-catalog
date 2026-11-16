@@ -1,0 +1,50 @@
+# systemd 单元：/etc/systemd/system/data-catalog.service
+# 安装：
+#   sudo cp deploy/data-catalog.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now data-catalog
+# 查看：
+#   systemctl status data-catalog --no-pager
+#   journalctl -u data-catalog -f
+#   journalctl -u data-catalog --since today | grep -c '"level": "ERROR"'
+
+[Unit]
+Description=data-catalog API（数据资产目录与质量校验服务）
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=appuser
+Group=appuser
+WorkingDirectory=/opt/data-catalog
+EnvironmentFile=/etc/data-catalog/env
+Environment=PYTHONUNBUFFERED=1
+Environment=LOG_JSON=1
+Environment=AUDIT_LOG_PATH=/var/log/data-catalog/audit.jsonl
+ExecStartPre=/opt/data-catalog/.venv/bin/alembic upgrade head
+ExecStart=/opt/data-catalog/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+
+# 进程加固：不可提权、只读系统、私有临时目录、只允许写审计目录
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/log/data-catalog
+UMask=0027
+
+# 资源上限：防止审计或压测把机器拖死
+LimitNOFILE=4096
+TasksMax=512
+
+[Install]
+WantedBy=multi-user.target

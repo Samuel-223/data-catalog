@@ -22,10 +22,15 @@ services:
       AUTO_CREATE_SCHEMA: "0"
       LOG_JSON: "1"
       LOG_LEVEL: INFO
+      AUTH_ENABLED: ${AUTH_ENABLED:-0}
+      API_KEYS: ${API_KEYS:-}
+      AUDIT_LOG_PATH: /var/log/data-catalog/audit.jsonl
     user: "10001:10001"
     read_only: true
     tmpfs:
       - /tmp
+    volumes:
+      - auditdata:/var/log/data-catalog
     cap_drop:
       - ALL
     security_opt:
@@ -45,3 +50,4 @@ services:
 
 volumes:
   pgdata:
+  auditdata:

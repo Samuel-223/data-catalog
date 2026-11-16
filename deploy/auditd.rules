@@ -1,0 +1,20 @@
+# auditd 规则：/etc/audit/rules.d/data-catalog.rules
+# 加载：sudo augenrules --load   或   sudo auditctl -R deploy/auditd.rules
+# 验证：sudo auditctl -l | grep data-catalog
+# 查询：sudo ausearch -k data-catalog-write | tail -20
+# 报表：sudo aureport -f -i | head -20
+
+# 1) 应用代码被改动（部署或入侵都会触发）
+-w /opt/data-catalog/app -p wa -k data-catalog-code
+
+# 2) 配置与密钥文件（含 .env，读与写都记）
+-w /etc/data-catalog -p rwa -k data-catalog-conf
+
+# 3) 审计目录本身的删除与重命名（防止有人先删日志再作恶）
+-w /var/log/data-catalog -p w -k data-catalog-audit
+
+# 4) 审计文件被截断或改权限
+-a always,exit -F path=/var/log/data-catalog/audit.jsonl -F perm=wa -k data-catalog-audit
+
+# 5) 提权与关键命令执行（配合 sudo 审计）
+-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=4294967295 -k privileged-cmd

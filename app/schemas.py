@@ -107,3 +107,17 @@ class RunPayload(BaseModel):
 class LineageCreate(BaseModel):
     column_id: int
     upstream_column_id: int
+
+
+class AuditLogOut(BaseModel):
+    id: int
+    ts: datetime
+    request_id: str
+    actor: str
+    role: str
+    method: str
+    path: str
+    status_code: int
+    duration_ms: float
+    client_ip: str | None = None
+    model_config = ConfigDict(from_attributes=True)
