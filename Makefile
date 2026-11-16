@@ -10,18 +10,18 @@ run: ## 本地启动（SQLite，热重载）
 	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 test: ## 跑全部单元测试
-	pytest
+	python -m pytest
 
 cov: ## 跑测试并输出覆盖率
-	pytest --cov=app --cov-report=term-missing
+	python -m pytest --cov=app --cov-report=term-missing
 
 lint: ## 代码检查
-	ruff check .
-	ruff format --check .
+	python -m ruff check .
+	python -m ruff format --check .
 
 fmt: ## 自动格式化
-	ruff format .
-	ruff check --fix .
+	python -m ruff format .
+	python -m ruff check --fix .
 
 seed: ## 灌入演示数据（2 数据源 / 5 表 / 18 字段 / 3 规则）
 	python scripts/seed_demo.py
