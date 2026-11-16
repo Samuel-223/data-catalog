@@ -15,6 +15,9 @@ local: ## 本地启动（先杀掉占用端口的旧进程，再起服务）
 stop: ## 停掉本地服务（按端口找进程）
 	./scripts/stop-local.sh
 
+keyctl: ## 密钥管理（keyctl ARGS="create --role viewer --label demo --days 30"）
+	python -m app.core.keyring $(ARGS)
+
 test: ## 跑全部单元测试
 	python -m pytest
 

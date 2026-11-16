@@ -121,3 +121,36 @@ class AuditLogOut(BaseModel):
     duration_ms: float
     client_ip: str | None = None
     model_config = ConfigDict(from_attributes=True)
+
+
+class ApiKeyCreate(BaseModel):
+    role: str = Field(..., pattern="^(viewer|editor|admin)$")
+    label: str = Field("", max_length=80)
+    days: int = Field(90, ge=1, le=3650)
+
+
+class ApiKeyCreated(BaseModel):
+    key: str
+    key_id: str
+    role: str
+    label: str
+    expires_at: datetime | None
+
+
+class ApiKeyOut(BaseModel):
+    key_id: str
+    role: str
+    label: str
+    status: str
+    created_at: datetime
+    expires_at: datetime | None
+    revoked_at: datetime | None
+    last_used_at: datetime | None
+    created_by: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApiKeyRotate(BaseModel):
+    grace_hours: int = Field(24, ge=1, le=720)
+    days: int = Field(90, ge=1, le=3650)

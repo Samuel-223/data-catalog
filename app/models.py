@@ -103,3 +103,19 @@ class AuditLog(Base):
     status_code: Mapped[int] = mapped_column(index=True)
     duration_ms: Mapped[float] = mapped_column(default=0.0)
     client_ip: Mapped[str | None] = mapped_column(String(64))
+
+class ApiKey(Base):
+    """数据库托管密钥：只存哈希，明文仅签发时返回一次。"""
+
+    __tablename__ = "api_key"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key_id: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    label: Mapped[str] = mapped_column(String(80), default="")
+    key_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_by: Mapped[str] = mapped_column(String(80), default="")

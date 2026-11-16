@@ -112,9 +112,9 @@ async def authorize(request: Request) -> str:
                 detail="缺少 X-API-Key（或改用 Bearer token）",
                 headers={"WWW-Authenticate": "Bearer" if mode == "both" else "ApiKey"},
             )
-        keys = parse_keys()
-        role = keys.get(key)
         request.state.key_fp = _digest(key)
+        # 数据库托管密钥（dc_role_keyid_secret）优先；环境变量密钥作为 legacy 兜底
+        role = _verify_db_key(key, request) if key.startswith("dc_") else parse_keys().get(key)
         if role is None:
             request.state.actor = f"key:{_digest(key)}"
             request.state.role = "none"
@@ -139,6 +139,39 @@ async def authorize(request: Request) -> str:
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"当前角色 {role} 无权执行 {request.method}，需要 {needed}",
         )
+    return role
+
+
+def _verify_db_key(key: str, request: Request) -> str | None:
+    """查库校验密钥；吊销/过期给出可定位的 401 文案。"""
+    from ..db import SessionLocal
+    from .keyring import authenticate, fingerprint, keyring_enabled
+
+    if not keyring_enabled():
+        return None
+
+    db = SessionLocal()
+    try:
+        role, key_id = authenticate(key, db)
+    except ValueError as exc:
+        reason = str(exc)
+        messages = {
+            "revoked": "密钥已吊销",
+            "expired": "密钥已过期",
+            "invalid": "API Key 无效",
+        }
+        request.state.actor = f"key:{fingerprint(key)}"
+        request.state.role = "none"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=messages.get(reason, "API Key 无效"),
+            headers={"WWW-Authenticate": "ApiKey"},
+        ) from exc
+    finally:
+        db.close()
+
+    request.state.key_id = key_id
+    request.state.actor = f"{role}:{key_id}"
     return role
 
 

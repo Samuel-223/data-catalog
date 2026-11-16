@@ -1,5 +1,25 @@
 # 变更记录
 
+## 0.6.0 — 2026-11-17
+
+### 新增：密钥生命周期（签发/使用/轮换/吊销）
+
+- 密钥格式 `dc_{role}_{key_id}_{secret}`：前缀可被 secret scanning 识别，key_id 明文可见，
+  secret 48 位十六进制（192 bit 熵），明文只在签发响应里出现一次
+- 存储 `HMAC-SHA256(secret, API_KEY_PEPPER)`，校验用 `hmac.compare_digest` 恒时比较；
+  表格 `api_key`（迁移 `0003_api_key`）记录 role/label/created_at/expires_at/revoked_at/last_used_at/created_by
+- `app/core/keyring.py`：签发、状态判定、轮换（旧 key 宽限期到期）、吊销、last_used 节流写库，
+  并提供 CLI `python -m app.core.keyring create|list|rotate|revoke`
+- `POST/GET /keys`、`POST /keys/{id}/rotate`、`POST /keys/{id}/revoke`，全部仅 admin；
+  列表与轮换响应都不回明文
+- 鉴权链改造：`dc_` 开头走数据库校验（吊销/过期给出可定位文案），其余继续按 `API_KEYS` 环境变量校验，
+  升级不破坏既有部署；未配 pepper 时数据库密钥整体停用并返回 500
+- `docs/key-lifecycle.md`：密钥格式、存储取舍、轮换宽限期、吊销生效窗口、泄露应急四步
+- 测试 54 → 65（新增 11 项：明文只出一次、角色生效、过期/吊销拒绝、宽限期内旧 key 可用、非 admin 403、无 pepper 停用、legacy 兼容、哈希不含明文、last_used 落库）
+
+**实测**（端口 8025，pepper 已配）：签发 viewer → 读 200 / 写 403；轮换后新旧 key 同时 200；
+吊销新 key → 立刻 401「密钥已吊销」；列表只有 key_id 与状态，无明文。
+
 ## 0.5.2 — 2026-11-16
 
 ### 修复：本地 export 过的鉴权变量会让测试大面积 401
