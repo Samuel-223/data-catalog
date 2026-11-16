@@ -16,3 +16,7 @@ automation/report.html
 automation/report.xml
 automation/__pycache__/
 .ruff_cache/
+
+# 本地调试残留
+dbg*.db
+smoke.db
