@@ -1,5 +1,18 @@
 # 变更记录
 
+## 0.5.1 — 2026-11-16
+
+### 新增：本地启动脚本（启动前自动清端口）
+
+- `scripts/start-local.sh`：起服务前先查端口占用，打印每个占用进程的 PID、工作目录与命令行，
+  逐个 kill，20 次×0.25s 轮询确认释放，仍有残留则 `kill -9` 兜底
+- `scripts/stop-local.sh`：按端口停止，打印来源目录，避免“杀了不知道是哪份副本”
+- 支持项目根 `.env.local` 注入本地配置（已加入 `.gitignore`），默认值：
+  `AUTH_MODE=apikey`、`API_KEYS` 三把钥匙、`DATABASE_URL=sqlite:///./dev.db`
+- `make local` / `make stop` 两个入口
+- 解决的实际问题：本地多份目录副本并存时，旧进程占着 8000 端口，
+  新目录启动即失败、`curl` 却打到旧代码上（表现为 `/health/detail` 404 而代码其实是新的）
+
 ## 0.5.0 — 2026-11-16
 
 ### 加固：探针与 JWT 验签

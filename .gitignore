@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 app.db
 .env
+.env.local
 test_db.sqlite3
 seed_test.db
 mig_test.db

@@ -9,6 +9,12 @@ install: ## 安装开发依赖
 run: ## 本地启动（SQLite，热重载）
 	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+local: ## 本地启动（先杀掉占用端口的旧进程，再起服务）
+	./scripts/start-local.sh
+
+stop: ## 停掉本地服务（按端口找进程）
+	./scripts/stop-local.sh
+
 test: ## 跑全部单元测试
 	python -m pytest
 

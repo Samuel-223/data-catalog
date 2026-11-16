@@ -37,6 +37,8 @@ curl -s http://127.0.0.1:8000/ready
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 make seed        # 灌入演示数据：2 数据源 / 5 表 / 21 字段 / 3 规则
+make local       # 启动前自动清端口，推荐本地用这个
+make stop        # 停服务
 make run         # http://127.0.0.1:8000/docs
 ```
 
