@@ -1,5 +1,15 @@
 # 变更记录
 
+## 0.5.2 — 2026-11-16
+
+### 修复：本地 export 过的鉴权变量会让测试大面积 401
+
+- `tests/conftest.py` 在导入 app 前清掉 `AUTH_MODE`/`AUTH_ENABLED`/`API_KEYS`/
+  `OIDC_*`/`DOCS_ENABLED`/`AUDIT_LOG_PATH`，用例从干净的默认状态开始
+- 受影响表现：`export AUTH_MODE=apikey` 后再跑 pytest → 23 failed（无密钥请求被 401），
+  现在同一环境下 54 passed
+- 需要鉴权的用例仍用 `monkeypatch.setenv` 自行开启，不受影响
+
 ## 0.5.1 — 2026-11-16
 
 ### 新增：本地启动脚本（启动前自动清端口）

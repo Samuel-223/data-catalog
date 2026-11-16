@@ -4,6 +4,22 @@ import pathlib
 # 必须在导入 app 之前设置，让 app.db 读到测试库地址
 os.environ["DATABASE_URL"] = "sqlite:///./test_db.sqlite3"
 
+# 测试隔离：外部 shell 里的 AUTH_MODE=apikey / API_KEYS 等不得渗进用例，
+# 否则“忘带密钥”的断言会变成 401（本地 export 过一次就会踩到）
+for _name in (
+    "AUTH_MODE",
+    "AUTH_ENABLED",
+    "API_KEYS",
+    "OIDC_ISSUER",
+    "OIDC_AUDIENCE",
+    "OIDC_JWKS_URI",
+    "OIDC_DEV_HS256_SECRET",
+    "OIDC_TOKEN_CACHE_SECONDS",
+    "DOCS_ENABLED",
+    "AUDIT_LOG_PATH",
+):
+    os.environ.pop(_name, None)
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
