@@ -10,7 +10,10 @@ def test_health(client):
 def test_ready(client):
     r = client.get("/ready")
     assert r.status_code == 200
-    assert r.json() == {"status": "ready", "db": "ok"}
+    body = r.json()
+    assert body["status"] == "ready"
+    assert body["db"] == "ok"
+    assert body["audit"] == "ok"  # 审计目录必须可写，否则视为不就绪
 
 
 def test_root_service_info(client):

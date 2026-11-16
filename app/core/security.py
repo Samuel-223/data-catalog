@@ -25,7 +25,7 @@ from fastapi import HTTPException, Request, status
 ROLE_ORDER = {"viewer": 1, "editor": 2, "admin": 3}
 
 # 免鉴权路径：探针与文档之外一律校验
-PUBLIC_PATHS = {"/", "/health", "/ready", "/openapi.json"}
+PUBLIC_PATHS = {"/", "/health", "/ready"}
 
 
 def auth_mode() -> str:

@@ -14,6 +14,7 @@
     OIDC_DEV_HS256_SECRET=               # 仅本地/CI 用对称密钥，生产禁止
 """
 
+import hashlib
 import os
 import time
 from typing import Any
@@ -26,6 +27,44 @@ from .security import ROLE_ORDER
 
 _jwks_cache: dict[str, Any] = {"uri": None, "keys": None, "fetched_at": 0.0}
 JWKS_TTL = 300  # 秒；token 验签用的公钥轮换不会太频繁
+
+# token 级缓存：同一 token 在有效期内不重复验签（RSA 验签是 CPU 热点）
+_token_cache: dict[str, tuple[float, dict]] = {}
+_token_stats = {"hits": 0, "misses": 0, "evictions": 0}
+
+
+def token_cache_seconds() -> float:
+    try:
+        return float(os.getenv("OIDC_TOKEN_CACHE_SECONDS", "60"))
+    except ValueError:
+        return 60.0
+
+
+def _config_fingerprint() -> str:
+    """配置指纹：密钥/issuer/aud 变了就不该复用旧验签结果。"""
+    raw = "|".join(
+        [
+            os.getenv("OIDC_DEV_HS256_SECRET", ""),
+            os.getenv("OIDC_ISSUER", ""),
+            os.getenv("OIDC_AUDIENCE", ""),
+        ]
+    )
+    return hashlib.sha256(raw.encode()).hexdigest()[:12]
+
+
+def _cache_key(token: str) -> str:
+    return hashlib.sha256(f"{token}|{_config_fingerprint()}".encode()).hexdigest()[:32]
+
+
+def token_cache_stats() -> dict[str, int]:
+    return {**_token_stats, "size": len(_token_cache)}
+
+
+def clear_caches() -> None:
+    """测试与运维用：清空 JWKS 与 token 缓存。"""
+    _jwks_cache.update({"uri": None, "keys": None, "fetched_at": 0.0})
+    _token_cache.clear()
+    _token_stats.update({"hits": 0, "misses": 0, "evictions": 0})
 
 
 def oidc_enabled() -> bool:
@@ -73,11 +112,12 @@ def _jwks_uri() -> str:
         ) from exc
 
 
-def _jwks() -> list[dict]:
+def _jwks(force: bool = False) -> list[dict]:
     uri = _jwks_uri()
     now = time.time()
     if (
-        _jwks_cache["uri"] == uri
+        not force
+        and _jwks_cache["uri"] == uri
         and _jwks_cache["keys"]
         and now - _jwks_cache["fetched_at"] < JWKS_TTL
     ):
@@ -105,7 +145,13 @@ def _public_key(token: str, alg: str, kid: str | None):
             )
         return secret
     keys = _jwks()
-    candidates = [k for k in keys if k.get("kid") == kid] or keys
+    candidates = [k for k in keys if k.get("kid") == kid]
+    if not candidates and kid:
+        # kid 未命中通常是身份源轮换了密钥：强制刷新一次再匹配，不直接拒绝
+        keys = _jwks(force=True)
+        candidates = [k for k in keys if k.get("kid") == kid]
+    if not candidates:
+        candidates = keys
     if not candidates:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="身份源未返回可用公钥")
     try:
@@ -117,7 +163,30 @@ def _public_key(token: str, alg: str, kid: str | None):
 
 
 def verify_token(token: str) -> dict:
-    """验签 + 校验 iss/aud/exp，失败一律 401 并说明原因。"""
+    """验签 + 校验 iss/aud/exp，失败一律 401 并说明原因。
+
+    命中缓存时跳过验签（同一 token 默认 60 秒内不重复算），
+    缓存上界取 token 自己的 exp，避免缓存比 token 活得久。
+    """
+    key = _cache_key(token)
+    now = time.time()
+    hit = _token_cache.get(key)
+    if hit and hit[0] > now:
+        _token_stats["hits"] += 1
+        return hit[1]
+
+    payload = _verify_uncached(token)
+    exp = payload.get("exp")
+    ttl_end = now + token_cache_seconds()
+    if isinstance(exp, (int, float)):
+        ttl_end = min(ttl_end, float(exp))
+    if ttl_end > now:
+        _token_cache[key] = (ttl_end, payload)
+    _token_stats["misses"] += 1
+    return payload
+
+
+def _verify_uncached(token: str) -> dict:
     try:
         header = jwt.get_unverified_header(token)
     except jwt.PyJWTError as exc:

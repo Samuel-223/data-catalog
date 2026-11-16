@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .core.config import settings
@@ -39,6 +40,7 @@ app = FastAPI(
     description=DESCRIPTION,
     docs_url=None,
     redoc_url=None,
+    openapi_url=None,  # 关闭默认 /openapi.json，改为下面自己挂、受 DOCS_ENABLED 控制
     lifespan=lifespan,
 )
 
@@ -67,8 +69,17 @@ app.include_router(audit.router)
 app.include_router(authinfo.router)
 
 
+@app.get("/openapi.json", include_in_schema=False)
+def openapi_spec():
+    if not health.docs_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="接口文档已关闭")
+    return JSONResponse(app.openapi())
+
+
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui():
+    if not health.docs_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="接口文档已关闭")
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=app.title + " - API 文档",
@@ -80,13 +91,11 @@ async def custom_swagger_ui():
 
 @app.get("/", tags=["运维"], summary="服务信息")
 def root():
+    """只暴露“我是谁、怎么探活”，不列接口清单、不报版本号。"""
     return {
         "status": "ok",
         "service": "data-catalog",
-        "version": settings.version,
-        "docs": "/docs",
+        "docs": "/docs" if health.docs_enabled() else None,
         "health": "/health",
         "ready": "/ready",
-        "audit": "/audit",
-        "whoami": "/auth/whoami",
     }

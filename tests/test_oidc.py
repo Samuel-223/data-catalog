@@ -11,6 +11,9 @@ AUDIENCE = "data-catalog-api"
 
 @pytest.fixture
 def oidc_on(monkeypatch):
+    from app.core.oidc import clear_caches
+
+    clear_caches()  # 验签结果有缓存，每个用例从干净状态开始
     monkeypatch.setenv("AUTH_MODE", "oidc")
     monkeypatch.setenv("OIDC_ISSUER", ISSUER)
     monkeypatch.setenv("OIDC_AUDIENCE", AUDIENCE)
