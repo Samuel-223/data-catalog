@@ -64,3 +64,21 @@ make test      # 28 项，覆盖率门槛人工看
 ```
 
 CI 会跑同样的命令，本地绿了再推，能省一轮往返。
+
+## Python 版本支持范围
+
+| 版本 | 状态 | 说明 |
+|---|---|---|
+| 3.12 | ✅ 主力版本 | 依赖锁定基线，CI 与本地验证均在此版本 |
+| 3.13 | ✅ CI 验证 | pydantic ≥2.12 提供 cp313 wheel |
+| 3.14 | ✅ CI 验证 | 需 pydantic ≥2.12；2.11.x 无 cp314 wheel，会退回源码编译并失败 |
+
+安装依赖失败的典型症状：
+
+```text
+error: metadata-generation-failed
+╰─> pydantic-core
+```
+
+原因不是网络，是 pydantic-core 没有对应 Python 版本的预编译包，pip 退回源码编译、需要 Rust 工具链。
+处理方式：`pip install "pydantic>=2.12,<3"`，或把解释器降到 3.12。
