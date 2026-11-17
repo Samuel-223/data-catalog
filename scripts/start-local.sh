@@ -8,6 +8,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 PROJECT_DIR="$(pwd)"
 PORT="${PORT:-8000}"
+HOST_WANTED="${HOST:-0.0.0.0}"
 
 # 可选：把本地配置放在项目根的 .env.local（不会被提交）
 if [ -f .env.local ]; then
@@ -71,5 +72,19 @@ else
   exit 1
 fi
 
-echo "[启动] $PROJECT_DIR → 0.0.0.0:$PORT  (AUTH_MODE=$AUTH_MODE, DOCS_ENABLED=${DOCS_ENABLED:-1}, PY=$PY)"
-exec "$PY" -m uvicorn app.main:app --host 0.0.0.0 --port "$PORT"
+# AUTH_MODE=off 等于没有任何鉴权：此时默认只监听本机，避免同网段随便进来删数据
+HOST="$HOST_WANTED"
+if [ "$AUTH_MODE" = "off" ]; then
+  if [ "${ALLOW_INSECURE_BIND:-0}" = "1" ]; then
+    echo "[告警] AUTH_MODE=off + ALLOW_INSECURE_BIND=1：$HOST 上任何人不带密钥即可读写删，风险自负" >&2
+  else
+    if [ "$HOST_WANTED" != "127.0.0.1" ]; then
+      echo "[告警] AUTH_MODE=off：已把监听地址从 $HOST_WANTED 收窄为 127.0.0.1（仅本机可访问）" >&2
+      echo "        需要对外访问请改用 AUTH_MODE=apikey 或 oidc" >&2
+    fi
+    HOST="127.0.0.1"
+  fi
+fi
+
+echo "[启动] $PROJECT_DIR → $HOST:$PORT  (AUTH_MODE=$AUTH_MODE, DOCS_ENABLED=${DOCS_ENABLED:-1}, PY=$PY)"
+exec "$PY" -m uvicorn app.main:app --host "$HOST" --port "$PORT"

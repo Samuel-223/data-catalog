@@ -14,7 +14,7 @@ def _flag(name: str, default: bool) -> bool:
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "数据资产目录与质量校验服务"
-    version: str = "0.6.1"
+    version: str = "0.6.2"
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
     log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
     log_json: bool = _flag("LOG_JSON", True)

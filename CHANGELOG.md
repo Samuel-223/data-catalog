@@ -1,5 +1,18 @@
 # 变更记录
 
+## 0.6.2 — 2026-11-17
+
+### 新增：AUTH_MODE=off 时自动收窄监听地址
+
+- `AUTH_MODE=off` 表示无鉴权，此时脚本把监听地址从 `0.0.0.0` 强制收窄为 `127.0.0.1`，
+  并打印告警：同网段任何人不带密钥即可读写删
+- 确实需要对外调试时显式放行：`AUTH_MODE=off ALLOW_INSECURE_BIND=1 ./scripts/start-local.sh`
+  （会打一条风险自负的告警）
+- `HOST` 变量可自定义监听地址；`AUTH_MODE=apikey/oidc/both` 时行为不变（仍默认 0.0.0.0）
+
+**实测**：off → `LISTEN 127.0.0.1:8037`，本机 200；apikey → `LISTEN 0.0.0.0:8038`；
+off + ALLOW_INSECURE_BIND=1 → `0.0.0.0` 并告警。
+
 ## 0.6.1 — 2026-11-17
 
 ### 修复：Ubuntu 上没有 `python` 命令
