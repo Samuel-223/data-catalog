@@ -17,6 +17,9 @@ local: ## 本地启动（先杀掉占用端口的旧进程，再起服务）
 stop: ## 停掉本地服务（按端口找进程）
 	./scripts/stop-local.sh
 
+drill: ## 审计演练（跑完 12 个场景，输出留痕对照表）
+	./scripts/drill_audit.sh
+
 keyctl: ## 密钥管理（keyctl ARGS="create --role viewer --label demo --days 30"）
 	$(PY) -m app.core.keyring $(ARGS)
 
