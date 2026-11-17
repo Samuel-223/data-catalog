@@ -8,6 +8,7 @@ app.db
 test_db.sqlite3
 seed_test.db
 mig_test.db
+*.db
 *.sqlite3
 .pytest_cache/
 .coverage

@@ -6,6 +6,8 @@ help:
 install: ## 安装开发依赖
 	pip install -r requirements-dev.txt
 
+PY ?= python3
+
 run: ## 本地启动（SQLite，热重载）
 	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
@@ -16,27 +18,27 @@ stop: ## 停掉本地服务（按端口找进程）
 	./scripts/stop-local.sh
 
 keyctl: ## 密钥管理（keyctl ARGS="create --role viewer --label demo --days 30"）
-	python -m app.core.keyring $(ARGS)
+	$(PY) -m app.core.keyring $(ARGS)
 
 test: ## 跑全部单元测试
-	python -m pytest
+	$(PY) -m pytest
 
 cov: ## 跑测试并输出覆盖率
-	python -m pytest --cov=app --cov-report=term-missing
+	$(PY) -m pytest --cov=app --cov-report=term-missing
 
 lint: ## 代码检查
-	python -m ruff check .
-	python -m ruff format --check .
+	$(PY) -m ruff check .
+	$(PY) -m ruff format --check .
 
 fmt: ## 自动格式化
-	python -m ruff format .
-	python -m ruff check --fix .
+	$(PY) -m ruff format .
+	$(PY) -m ruff check --fix .
 
 sec: ## Linux/容器安全基线检查（有 FAIL 则退出码 1）
-	python security/linux_security_check.py --json security/linux_result.json
+	$(PY) security/linux_security_check.py --json security/linux_result.json
 
 keygen: ## 生成 API Key：make keygen ROLE=admin
-	python -m app.core.security $(or $(ROLE),editor)
+	$(PY) -m app.core.security $(or $(ROLE),editor)
 
 token: ## 本地 OIDC 测试 token：make token ROLE=admin
 	python scripts/dev_token.py $(or $(ROLE),admin)

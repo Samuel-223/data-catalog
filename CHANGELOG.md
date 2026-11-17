@@ -1,5 +1,16 @@
 # 变更记录
 
+## 0.6.1 — 2026-11-17
+
+### 修复：Ubuntu 上没有 `python` 命令
+
+- Ubuntu（PEP 394 起）只提供 `python3`，`python` 不存在，直接执行会报 `command not found`
+- `scripts/start-local.sh` 改为按优先级找解释器：`.venv/bin/python` → `python3`，
+  找不到时给出明确的安装提示（`apt install python3 python3-venv`）
+- `Makefile` 统一用 `PY ?= python3`，所有目标改为 `$(PY) -m ...`；
+  需要覆盖时 `make local PY=/path/to/venv/bin/python`
+- 启动日志直接显示解释器路径，排障时一眼能看出用的是哪个 Python
+
 ## 0.6.0 — 2026-11-17
 
 ### 新增：密钥生命周期（签发/使用/轮换/吊销）

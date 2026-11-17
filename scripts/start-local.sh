@@ -61,5 +61,15 @@ else
   echo "[预检] 端口 $PORT 空闲"
 fi
 
-echo "[启动] $PROJECT_DIR → 0.0.0.0:$PORT  (AUTH_MODE=$AUTH_MODE, DOCS_ENABLED=${DOCS_ENABLED:-1})"
-exec python -m uvicorn app.main:app --host 0.0.0.0 --port "$PORT"
+# Ubuntu 只提供 python3（PEP 394），所以按 venv → python3 的顺序找解释器
+if [ -x ".venv/bin/python" ]; then
+  PY=".venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PY="python3"
+else
+  echo "[错误] 找不到 python3，先装：sudo apt install -y python3 python3-venv" >&2
+  exit 1
+fi
+
+echo "[启动] $PROJECT_DIR → 0.0.0.0:$PORT  (AUTH_MODE=$AUTH_MODE, DOCS_ENABLED=${DOCS_ENABLED:-1}, PY=$PY)"
+exec "$PY" -m uvicorn app.main:app --host 0.0.0.0 --port "$PORT"
