@@ -1,5 +1,17 @@
 # 变更记录
 
+## 0.6.3 — 2026-11-17
+
+### 修复：`python -m app.core.keyring` 读不到 .env.local
+
+- CLI 启动时先加载项目根的 `.env.local`（真实环境变量优先，不会覆盖已 export 的值），
+  于是 `API_KEY_PEPPER` 与 `DATABASE_URL` 与 HTTP 服务共用同一份配置
+- 受影响表现：pepper 只写在 `.env.local` 时，CLI 报「未设置 API_KEY_PEPPER，数据库密钥不可用」
+- `.env.example` 去掉重复的 `DOCS_ENABLED` 与 `OIDC_TOKEN_CACHE_SECONDS`
+
+**实测**：临时 `.env.local` 提供 pepper 后，`keyring create` 正常签发，
+`keyring list` 输出 `9f7dda5e viewer active label=cli读取.env.local`。
+
 ## 0.6.2 — 2026-11-17
 
 ### 新增：AUTH_MODE=off 时自动收窄监听地址

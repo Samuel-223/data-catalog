@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import pathlib
 import secrets
 from datetime import datetime, timedelta
 
@@ -180,10 +181,26 @@ def authenticate(key: str, db: Session) -> tuple[str, str]:
     return row.role, row.key_id
 
 
+def _load_env_local() -> None:
+    """CLI 也认项目根的 .env.local：否则在 shell 里 export 过才跑得动，容易踩坑。"""
+    path = pathlib.Path(__file__).resolve().parents[2] / ".env.local"
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        os.environ.setdefault(name.strip(), value.strip().strip('"').strip("'"))
+
+
 def main(argv: list[str] | None = None) -> int:  # pragma: no cover — CLI 入口
     """python -m app.core.keyring create --role editor --label ci --days 90"""
     import argparse
+    import pathlib  # noqa: F401 — 显式导入，避免与模块级名字冲突
     import sys
+
+    _load_env_local()
 
     from ..db import Base, SessionLocal, engine
     from ..models import ApiKey
