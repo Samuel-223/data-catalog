@@ -1,5 +1,18 @@
 # 变更记录
 
+## 0.6.4 — 2026-11-17
+
+### 修复：只装运行时依赖后 pytest 报 httpx 缺失
+
+- `Starlette TestClient` 依赖 `httpx`，它属于开发依赖（`requirements-dev.txt`）。
+  只执行 `pip install -r requirements.txt` 后跑测试会报
+  `RuntimeError: The starlette.testclient module requires the httpx package to be installed`
+- `Makefile` 的 `install` 改为 `$(PY) -m pip install -r requirements-dev.txt`，
+  与其它目标统一用 `PY`，并注明安装内容含 pytest/httpx/ruff
+- `docs/development.md` 安装命令加注：测试必须装 dev 依赖
+
+**正确安装**：`python3 -m pip install -r requirements-dev.txt`
+
 ## 0.6.3 — 2026-11-17
 
 ### 修复：`python -m app.core.keyring` 读不到 .env.local

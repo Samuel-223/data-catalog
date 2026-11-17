@@ -3,8 +3,8 @@
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
-install: ## 安装开发依赖
-	pip install -r requirements-dev.txt
+install: ## 安装开发依赖（含 pytest/httpx/ruff）
+	$(PY) -m pip install -r requirements-dev.txt
 
 PY ?= python3
 
@@ -20,7 +20,7 @@ stop: ## 停掉本地服务（按端口找进程）
 keyctl: ## 密钥管理（keyctl ARGS="create --role viewer --label demo --days 30"）
 	$(PY) -m app.core.keyring $(ARGS)
 
-test: ## 跑全部单元测试
+test: ## 跑全部单元测试（需要 requirements-dev.txt）
 	$(PY) -m pytest
 
 cov: ## 跑测试并输出覆盖率

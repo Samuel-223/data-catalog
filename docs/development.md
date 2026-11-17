@@ -4,7 +4,7 @@
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt   # 测试必须装这份：TestClient 依赖其中的 httpx
 make run          # SQLite，热重载，默认 8000 端口
 ```
 
