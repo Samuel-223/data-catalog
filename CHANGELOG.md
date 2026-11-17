@@ -1,5 +1,13 @@
 # 变更记录
 
+## 0.6.7 — 2026-11-17
+
+### 修复：CI 的 `ruff format --check` 未通过
+
+- 4 个文件不符合格式化规则（长行/参数换行），CI lint 任务因此失败
+- 执行 `ruff format .` 后：`ruff format --check` 全部通过，`ruff check` 无告警，65 项测试仍全绿
+- 教训：CI 跑的是 `ruff check` + `ruff format --check` 两件事，本地只跑前者会漏
+
 ## 0.6.6 — 2026-11-17
 
 ### 修复：演练脚本的密钥与审计路径自检

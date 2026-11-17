@@ -104,6 +104,7 @@ class AuditLog(Base):
     duration_ms: Mapped[float] = mapped_column(default=0.0)
     client_ip: Mapped[str | None] = mapped_column(String(64))
 
+
 class ApiKey(Base):
     """数据库托管密钥：只存哈希，明文仅签发时返回一次。"""
 

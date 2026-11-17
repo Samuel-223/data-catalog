@@ -43,7 +43,9 @@ def _created(plaintext: str, row) -> ApiKeyCreated:
     )
 
 
-@router.post("", response_model=ApiKeyCreated, status_code=status.HTTP_201_CREATED, summary="签发密钥")
+@router.post(
+    "", response_model=ApiKeyCreated, status_code=status.HTTP_201_CREATED, summary="签发密钥"
+)
 def create(payload: ApiKeyCreate, request: Request, db: Session = Depends(get_db)):
     if not keyring.keyring_enabled():
         raise HTTPException(

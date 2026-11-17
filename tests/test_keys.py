@@ -10,9 +10,7 @@ def pepper(monkeypatch):
     monkeypatch.setenv("API_KEY_PEPPER", "test-pepper-0123456789")
     monkeypatch.setenv("AUTH_MODE", "apikey")
     # 引导密钥：签发接口本身也要 admin 身份，legacy key 在这里充当引导者
-    monkeypatch.setenv(
-        "API_KEYS", "admin:sk_admin_000000000000,viewer:sk_viewer_222222222222"
-    )
+    monkeypatch.setenv("API_KEYS", "admin:sk_admin_000000000000,viewer:sk_viewer_222222222222")
     keyring.pepper()
     yield "test-pepper-0123456789"
 

@@ -62,8 +62,9 @@ curl -s -H "X-API-Key: $AKEY" http://127.0.0.1:8000/health/detail
 
 ```python
 from app.core.oidc import token_cache_stats, clear_caches
-token_cache_stats()   # {"hits": 12, "misses": 3, "evictions": 0, "size": 3}
-clear_caches()        # 运维排查“为什么旧 token 还能过”时清一次
+
+token_cache_stats()  # {"hits": 12, "misses": 3, "evictions": 0, "size": 3}
+clear_caches()  # 运维排查“为什么旧 token 还能过”时清一次
 ```
 
 ## 四、验收
