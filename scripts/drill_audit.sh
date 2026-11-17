@@ -21,9 +21,29 @@ while getopts "b:f:h" opt; do
   esac
 done
 
-ADMIN_KEY="${DRILL_ADMIN_KEY:-sk_admin_local_00000000}"
-EDITOR_KEY="${DRILL_EDITOR_KEY:-sk_editor_local_1111111}"
-VIEWER_KEY="${DRILL_VIEWER_KEY:-sk_viewer_local_222222}"
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+
+# 从项目根 .env.local 的 API_KEYS 里取某个角色的 key：role_key editor
+role_key() {
+  local role="$1" line
+  [ -f "$ROOT/.env.local" ] || return 1
+  line=$(grep -E '^API_KEYS=' "$ROOT/.env.local" | tail -1 | cut -d= -f2-)
+  line=$(printf '%s' "$line" | tr -d '"' | tr -d "'")
+  printf '%s' "$line" | tr ',' '\n' | grep -E "^${role}:" | head -1 | cut -d: -f2- | tr -d ' \r'
+}
+
+pk() {  # pk 角色 环境变量值 兜底默认值
+  local role="$1" given="$2" fallback="$3" found=""
+  if [ -n "$given" ]; then printf '%s' "$given"; return; fi
+  found=$(role_key "$role" 2>/dev/null || true)
+  printf '%s' "${found:-$fallback}"
+}
+
+ADMIN_KEY=$(pk admin "${DRILL_ADMIN_KEY:-}" "sk_admin_local_00000000")
+EDITOR_KEY=$(pk editor "${DRILL_EDITOR_KEY:-}" "sk_editor_local_1111111")
+VIEWER_KEY=$(pk viewer "${DRILL_VIEWER_KEY:-}" "sk_viewer_local_222222")
+KEY_SOURCE="默认值"
+[ -f "$ROOT/.env.local" ] && grep -q '^API_KEYS=' "$ROOT/.env.local" 2>/dev/null && KEY_SOURCE=".env.local"
 
 PASS=0
 FAIL=0
@@ -63,6 +83,31 @@ echo
 echo "[0] 连通性"
 probe "GET /health（匿名，探针）" 200 "$BASE/health"
 probe "GET /ready（匿名，探针）" 200 "$BASE/ready"
+
+echo
+echo "[0.5] 身份自检（key 来源：$KEY_SOURCE）"
+BAD_KEY=0
+for pair in "admin:$ADMIN_KEY" "editor:$EDITOR_KEY" "viewer:$VIEWER_KEY"; do
+  role=${pair%%:*}; key=${pair#*:}
+  code=$(curl -s -o /dev/null -w '%{http_code}' -H "X-API-Key: $key" "$BASE/datasources")
+  head_key=$(printf '%s' "$key" | cut -c1-18)
+  if [ "$code" = "200" ]; then
+    printf '  %-8s %s…  %s\n' "$role" "$head_key" "$code"
+  else
+    printf '  %-8s %s…  %s  ✗该角色 key 无效\n' "$role" "$head_key" "$code"
+    BAD_KEY=1
+  fi
+done
+if [ "$BAD_KEY" -ne 0 ]; then
+  cat <<'HINT'
+
+  提示：脚本用的 key 与服务端 API_KEYS 不一致，后续所有场景都会 401。
+  修法之一：把 .env.local 的 API_KEYS 改成脚本读取的那一套后重启服务
+  修法之二：显式传入真实 key
+      DRILL_ADMIN_KEY=... DRILL_EDITOR_KEY=... DRILL_VIEWER_KEY=... ./scripts/drill_audit.sh
+HINT
+  exit 3
+fi
 
 echo
 echo "[1] 只读成功 —— 不该留痕（避免审计被查询刷满）"
@@ -105,6 +150,15 @@ echo
 echo "======================================================"
 echo " 结果：$PASS 项符合预期，$FAIL 项不符"
 echo "======================================================"
+
+if [ ! -f "$FILE" ]; then
+  echo
+  echo "⚠️ 审计文件仍不存在：一个必然留痕的请求（无密钥 401）都没写进来。"
+  echo "   说明服务端 AUDIT_LOG_PATH 与这里的 $FILE 不是同一个文件："
+  echo "   tr '\0' '\n' < /proc/\$(pgrep -f 'uvicorn app.main:app' | head -1)/environ | grep AUDIT_LOG_PATH"
+  echo "   然后用 -f 指向服务端那个路径重跑。"
+  note_fail
+fi
 
 if [ -f "$FILE" ]; then
   echo
