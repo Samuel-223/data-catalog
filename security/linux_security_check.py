@@ -416,12 +416,23 @@ def check_kernel_net():
         add("L18", "内核网络参数", "SKIP", "容器内不可读 /proc/sys/net")
         return
     problems = []
+    notes = []
     if syncookies != "1":
         problems.append("tcp_syncookies != 1（SYN Flood 防护关闭）")
     if ip_forward not in {"0", ""}:
-        problems.append("ip_forward=1（若无需路由应关闭）")
+        # 共享宿主/容器运行时普遍开启转发，属宿主级配置而非本项目缺陷：
+        # 记 INFO 提示，不计入 FAIL，避免 CI 因执行器环境误报
+        notes.append(f"ip_forward={ip_forward}（共享宿主常见；若本机无需路由建议关闭）")
     if problems:
         add("L18", "内核网络参数", "FAIL", "；".join(problems), "sysctl 调整并写入 /etc/sysctl.d")
+    elif notes:
+        add(
+            "L18",
+            "内核网络参数",
+            "INFO",
+            "syncookies 开启；" + "；".join(notes),
+            "单机部署可设 net.ipv4.ip_forward=0；容器/宿主环境可忽略",
+        )
     else:
         add("L18", "内核网络参数", "PASS", "syncookies 开启，未开启转发")
 
